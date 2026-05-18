@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Task, TaskNote, Priority } from '../../types'
+import type { Task, Priority } from '../../types'
 import { useTaskNotes } from '../../hooks/useTaskNotes'
 
 interface TaskDetailModalProps {
@@ -19,7 +19,7 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
   const [dueDate, setDueDate] = useState(task.due_date?.split('T')[0] || '')
   const [newNote, setNewNote] = useState('')
 
-  const { data: notes, createNote, updateNote, deleteNote } = useTaskNotes(task.id)
+  const { data: notes, createNote, deleteNote } = useTaskNotes(task.id)
 
   if (!open) return null
 
@@ -60,8 +60,8 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl border border-surface-200 w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
+      <div className="absolute inset-0 bg-black/30 dark:bg-black/60" onClick={onClose} />
+      <div className="relative bg-white dark:bg-surface-200 rounded-xl shadow-xl border border-surface-200 dark:border-surface-300 w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
           {isEditing ? (
             <input
@@ -199,7 +199,7 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
                 </p>
               )}
               {notes?.map((note) => (
-                <div key={note.id} className="flex items-start gap-3 p-3 bg-surface-50 rounded-lg group">
+                <div key={note.id} className="flex items-start gap-3 p-3 bg-surface-50 dark:bg-surface-100 rounded-lg group">
                   <p className="flex-1 text-sm text-surface-700 whitespace-pre-wrap">{note.content}</p>
                   <button
                     onClick={() => deleteNote.mutate(note.id)}

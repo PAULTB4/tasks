@@ -5,9 +5,9 @@ export function LandingPage() {
   const { user } = useAuthStore()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-50 to-brand-50 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-surface-50 dark:from-surface-100 to-brand-50 dark:to-brand-50/20 flex flex-col">
       <header className="px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand-700">TaskForge</h1>
+        <h1 className="text-xl font-bold text-brand-700 dark:text-brand-600">TaskForge</h1>
         {user ? (
           <Link
             to="/dashboard"
@@ -27,10 +27,10 @@ export function LandingPage() {
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <div className="max-w-2xl">
-          <h2 className="text-5xl font-bold text-surface-900 mb-6 leading-tight">
+          <h2 className="text-5xl font-bold text-surface-900 dark:text-surface-100 mb-6 leading-tight">
             Tu segundo cerebro para tareas
           </h2>
-          <p className="text-lg text-surface-600 mb-10 max-w-xl mx-auto">
+          <p className="text-lg text-surface-600 dark:text-surface-400 mb-10 max-w-xl mx-auto">
             Organiza tus proyectos universitarios, personales y profesionales en un solo lugar.
             Kanban, notas y jerarquia sin limites.
           </p>

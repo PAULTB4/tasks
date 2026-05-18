@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from './hooks/useAuthStore'
+import { useThemeStore } from './hooks/useThemeStore'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
 import { LandingPage } from './pages/LandingPage'
 import { AuthPage } from './pages/AuthPage'
@@ -23,6 +24,11 @@ function EmptyDashboard() {
 
 function App() {
   const { initialize, initialized } = useAuthStore()
+  const { initialize: initTheme } = useThemeStore()
+
+  useEffect(() => {
+    initTheme()
+  }, [])
 
   useEffect(() => {
     if (!initialized) {

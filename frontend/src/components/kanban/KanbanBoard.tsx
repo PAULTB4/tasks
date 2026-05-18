@@ -9,7 +9,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import type { Task, TaskStatus, Priority } from '../../types'
+import type { Task, Priority } from '../../types'
 import { useTasks } from '../../hooks/useTasks'
 import { useTaskStatuses } from '../../hooks/useTaskStatuses'
 import { KanbanColumn } from './KanbanColumn'
@@ -95,7 +95,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 h-full px-4 pt-4">
+        <div className="flex-1 flex gap-4 overflow-x-auto p-6">
           {statuses?.map((status) => (
             <KanbanColumn
               key={status.id}

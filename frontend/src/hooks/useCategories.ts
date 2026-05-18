@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { insforge } from '../lib/insforge'
+import { useAuthStore } from './useAuthStore'
 import type { Category } from '../types'
 
 export function useCategories() {
@@ -9,7 +10,7 @@ export function useCategories() {
     queryKey: ['categories'],
     queryFn: async () => {
       const { data, error } = await insforge
-        .from('categories')
+        .database.from('categories')
         .select('*')
         .order('name')
 
@@ -19,10 +20,11 @@ export function useCategories() {
   })
 
   const createCategory = useMutation({
-    mutationFn: async (input: { name: string; color?: string; parent_id?: string | null }) => {
+    mutationFn: async (input: { name: string; color?: string; parent_id?: string | null; type?: 'folder' | 'list' }) => {
+      const userId = useAuthStore.getState().user?.id
       const { data, error } = await insforge
-        .from('categories')
-        .insert([input])
+        .database.from('categories')
+        .insert([{ type: 'list', ...input, user_id: userId }])
         .select()
         .single()
 
@@ -37,7 +39,7 @@ export function useCategories() {
   const updateCategory = useMutation({
     mutationFn: async ({ id, ...input }: { id: string; name?: string; color?: string | null; parent_id?: string | null }) => {
       const { data, error } = await insforge
-        .from('categories')
+        .database.from('categories')
         .update(input)
         .eq('id', id)
         .select()
@@ -54,7 +56,7 @@ export function useCategories() {
   const deleteCategory = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await insforge
-        .from('categories')
+        .database.from('categories')
         .delete()
         .eq('id', id)
 

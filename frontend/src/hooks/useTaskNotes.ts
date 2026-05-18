@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { insforge } from '../lib/insforge'
+import { useAuthStore } from './useAuthStore'
 import type { TaskNote } from '../types'
 
 export function useTaskNotes(taskId?: string) {
@@ -9,7 +10,7 @@ export function useTaskNotes(taskId?: string) {
     queryKey: ['task_notes', taskId],
     queryFn: async () => {
       const { data, error } = await insforge
-        .from('task_notes')
+        .database.from('task_notes')
         .select('*')
         .eq('task_id', taskId!)
         .order('created_at', { ascending: false })
@@ -22,9 +23,10 @@ export function useTaskNotes(taskId?: string) {
 
   const createNote = useMutation({
     mutationFn: async (input: { task_id: string; content: string }) => {
+      const userId = useAuthStore.getState().user?.id
       const { data, error } = await insforge
-        .from('task_notes')
-        .insert([input])
+        .database.from('task_notes')
+        .insert([{ ...input, user_id: userId }])
         .select()
         .single()
 
@@ -39,7 +41,7 @@ export function useTaskNotes(taskId?: string) {
   const updateNote = useMutation({
     mutationFn: async ({ id, content }: { id: string; content: string }) => {
       const { data, error } = await insforge
-        .from('task_notes')
+        .database.from('task_notes')
         .update({ content })
         .eq('id', id)
         .select()
@@ -56,7 +58,7 @@ export function useTaskNotes(taskId?: string) {
   const deleteNote = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await insforge
-        .from('task_notes')
+        .database.from('task_notes')
         .delete()
         .eq('id', id)
 

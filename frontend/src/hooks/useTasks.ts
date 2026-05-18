@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { insforge } from '../lib/insforge'
+import { useAuthStore } from './useAuthStore'
 import type { Task, Priority } from '../types'
 
 interface CreateTaskInput {
@@ -27,7 +28,7 @@ export function useTasks(categoryId?: string) {
     queryKey: ['tasks', categoryId],
     queryFn: async () => {
       let q = insforge
-        .from('tasks')
+        .database.from('tasks')
         .select('*')
         .order('created_at', { ascending: false })
 
@@ -44,9 +45,10 @@ export function useTasks(categoryId?: string) {
 
   const createTask = useMutation({
     mutationFn: async (input: CreateTaskInput) => {
+      const userId = useAuthStore.getState().user?.id
       const { data, error } = await insforge
-        .from('tasks')
-        .insert([input])
+        .database.from('tasks')
+        .insert([{ ...input, user_id: userId }])
         .select()
         .single()
 
@@ -61,7 +63,7 @@ export function useTasks(categoryId?: string) {
   const updateTask = useMutation({
     mutationFn: async ({ id, ...input }: UpdateTaskInput) => {
       const { data, error } = await insforge
-        .from('tasks')
+        .database.from('tasks')
         .update(input)
         .eq('id', id)
         .select()
@@ -78,7 +80,7 @@ export function useTasks(categoryId?: string) {
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await insforge
-        .from('tasks')
+        .database.from('tasks')
         .delete()
         .eq('id', id)
 

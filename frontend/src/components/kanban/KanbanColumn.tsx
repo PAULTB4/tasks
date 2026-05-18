@@ -1,11 +1,29 @@
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Task, TaskStatus } from '../../types'
 import { TaskCard } from '../tasks/TaskCard'
+import { Plus } from 'lucide-react'
 
-function SortableTaskCard({ task, onClick }: { task: Task; onClick: (task: Task) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+function SortableTaskCard({
+  task,
+  onClick,
+}: {
+  task: Task
+  onClick: (task: Task) => void
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: task.id,
     data: { type: 'task', task },
   })
@@ -30,7 +48,12 @@ interface KanbanColumnProps {
   onCreateTask: () => void
 }
 
-export function KanbanColumn({ status, tasks, onTaskClick, onCreateTask }: KanbanColumnProps) {
+export function KanbanColumn({
+  status,
+  tasks,
+  onTaskClick,
+  onCreateTask,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: status.id,
     data: { type: 'column', status },
@@ -38,44 +61,56 @@ export function KanbanColumn({ status, tasks, onTaskClick, onCreateTask }: Kanba
 
   return (
     <div
-      className={`flex-shrink-0 w-72 flex flex-col bg-surface-100 rounded-xl ${
-        isOver ? 'ring-2 ring-brand-400 ring-offset-1' : ''
+      className={`flex-shrink-0 w-80 flex flex-col rounded-xl transition-colors ${
+        isOver
+          ? 'bg-brand-50/50 dark:bg-brand-900/20'
+          : 'bg-surface-100 dark:bg-surface-800'
       }`}
     >
-      <div className="flex items-center justify-between px-3 py-2.5">
+      <div className="flex items-center justify-between px-4 py-3 border-b-2 border-surface-200 dark:border-surface-700">
         <div className="flex items-center gap-2">
           <span
-            className="w-2.5 h-2.5 rounded-full"
+            className="w-3 h-3 rounded-full"
             style={{ backgroundColor: status.color }}
           />
-          <h3 className="text-sm font-semibold text-surface-700">{status.name}</h3>
-          <span className="text-xs text-surface-400 bg-surface-200 px-1.5 py-0.5 rounded-full">
+          <h3 className="text-base font-semibold text-surface-800 dark:text-surface-200">
+            {status.name}
+          </h3>
+          <span className="text-sm font-medium text-surface-500 dark:text-surface-400">
             {tasks.length}
           </span>
         </div>
         <button
           onClick={onCreateTask}
-          className="text-surface-400 hover:text-brand-600 transition-colors"
+          className="text-surface-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
           title="Agregar tarea"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+          <Plus size={20} />
         </button>
       </div>
 
       <div
         ref={setNodeRef}
-        className="flex-1 p-2 space-y-2 overflow-y-auto min-h-[120px]"
+        className="flex-1 p-3 space-y-3 overflow-y-auto min-h-[120px]"
       >
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={tasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
           {tasks.map((task) => (
             <SortableTaskCard key={task.id} task={task} onClick={onTaskClick} />
           ))}
         </SortableContext>
-        {tasks.length === 0 && (
-          <div className="flex items-center justify-center h-24 text-xs text-surface-400">
-            Sin tareas
+        {tasks.length === 0 && !isOver && (
+          <div className="flex items-center justify-center h-24 text-sm text-surface-500 dark:text-surface-400">
+            Arrastrá una tarea acá
+          </div>
+        )}
+        {isOver && (
+          <div className="flex items-center justify-center h-24 rounded-lg bg-brand-50 dark:bg-brand-900/20 border-2 border-dashed border-brand-300 dark:border-brand-700">
+            <p className="text-sm font-medium text-brand-600 dark:text-brand-300">
+              Soltá para mover
+            </p>
           </div>
         )}
       </div>

@@ -21,7 +21,6 @@ export function ListView({ categoryId }: ListViewProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all')
-  const [filterStatus, setFilterStatus] = useState<string | 'all'>('all')
 
   const filteredTasks = tasks?.filter((task) => {
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false
@@ -60,7 +59,7 @@ export function ListView({ categoryId }: ListViewProps) {
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as Priority | 'all')}
-          className="text-xs px-2 py-1.5 border border-surface-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="text-xs px-2 py-1.5 border border-surface-300 dark:border-surface-400 bg-white dark:bg-surface-100 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">Todas las prioridades</option>
           <option value="low">Baja</option>
@@ -89,7 +88,7 @@ export function ListView({ categoryId }: ListViewProps) {
                 <button
                   key={task.id}
                   onClick={() => setSelectedTask(task)}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-50 transition-colors flex items-center gap-4"
+                  className="w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-200 transition-colors flex items-center gap-4"
                 >
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-medium text-surface-900 truncate">{task.title}</h4>

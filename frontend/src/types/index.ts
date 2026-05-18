@@ -4,6 +4,7 @@ export interface Category {
   name: string
   color: string | null
   parent_id: string | null
+  type: 'folder' | 'list'
   created_at: string
 }
 
@@ -28,6 +29,7 @@ export interface Task {
   description: string | null
   priority: Priority
   due_date: string | null
+  notes_count?: number
   created_at: string
   updated_at: string
 }
