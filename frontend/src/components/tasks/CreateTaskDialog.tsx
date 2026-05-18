@@ -1,6 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Priority } from '../../types'
 import { useTaskStatuses } from '../../hooks/useTaskStatuses'
+import { Dialog } from '../ui/Dialog'
+import { Button } from '../ui/Button'
+import { Input } from '../ui/Input'
+import { Textarea } from '../ui/Textarea'
+import { Select } from '../ui/Select'
 
 interface CreateTaskDialogProps {
   categoryId: string
@@ -29,9 +34,20 @@ export function CreateTaskDialog({
   const [priority, setPriority] = useState<Priority>('medium')
   const [statusId, setStatusId] = useState(defaultStatusId || '')
 
-  const { data: statuses } = useTaskStatuses(categoryId)
+  const {
+    data: statuses,
+    isLoading: statusesLoading,
+    isError: statusesError,
+    seedGlobalStatuses,
+  } = useTaskStatuses(categoryId)
 
-  if (!open) return null
+  useEffect(() => {
+    if (defaultStatusId) {
+      setStatusId(defaultStatusId)
+    } else if (statuses && statuses.length > 0 && !statusId) {
+      setStatusId(statuses[0].id)
+    }
+  }, [defaultStatusId, statuses])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,78 +63,117 @@ export function CreateTaskDialog({
     setPriority('medium')
   }
 
+  const handleClose = () => {
+    setTitle('')
+    setDescription('')
+    setPriority('medium')
+    if (defaultStatusId) {
+      setStatusId(defaultStatusId)
+    } else if (statuses && statuses.length > 0) {
+      setStatusId(statuses[0].id)
+    }
+    onClose()
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-xl border border-surface-200 p-6 w-full max-w-lg mx-4">
-        <h3 className="text-lg font-semibold text-surface-900 mb-4">Nueva tarea</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <Dialog open={open} onClose={handleClose} title="Nueva tarea">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label
+            htmlFor="title"
+            className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+          >
+            Título
+          </label>
+          <Input
+            id="title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="¿Qué tenés que hacer?"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+          >
+            Descripción (opcional)
+          </label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Detalles adicionales..."
+            rows={3}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-1">Titulo</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Que tenes que hacer?"
-              autoFocus
-              className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            />
+            <label
+              htmlFor="priority"
+              className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
+            >
+              Prioridad
+            </label>
+            <Select
+              id="priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as Priority)}
+            >
+              <option value="low">Baja</option>
+              <option value="medium">Media</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </Select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-surface-700 mb-1">Descripcion (opcional)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detalles adicionales..."
-              rows={3}
-              className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-surface-700 mb-1">Prioridad</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              >
-                <option value="low">Baja</option>
-                <option value="medium">Media</option>
-                <option value="high">Alta</option>
-                <option value="urgent">Urgente</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-surface-700 mb-1">Estado</label>
-              <select
-                value={statusId}
-                onChange={(e) => setStatusId(e.target.value)}
-                className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              >
-                {statuses?.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-surface-600 hover:text-surface-900"
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1"
             >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim() || !statusId}
-              className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50"
+              Estado
+            </label>
+            <Select
+              id="status"
+              value={statusId}
+              onChange={(e) => setStatusId(e.target.value)}
+              disabled={statusesLoading || statusesError || (statuses && statuses.length === 0)}
             >
-              {isSubmitting ? 'Creando...' : 'Crear tarea'}
-            </button>
+              {statusesLoading ? (
+                <option value="">Cargando estados...</option>
+              ) : statusesError ? (
+                <option value="">Error al cargar estados</option>
+              ) : statuses && statuses.length > 0 ? (
+                statuses.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))
+              ) : (
+                <option value="">Creando estados por defecto...</option>
+              )}
+            </Select>
+            {statuses && statuses.length === 0 && !statusesLoading && seedGlobalStatuses.isPending && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                No hay estados disponibles. Se están creando automáticamente...
+              </p>
+            )}
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <div className="flex gap-3 justify-end pt-4">
+          <Button type="button" variant="ghost" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting || !title.trim() || !statusId}
+          >
+            {isSubmitting ? 'Creando...' : 'Crear tarea'}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   )
 }
