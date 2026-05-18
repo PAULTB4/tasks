@@ -8,3 +8,8 @@ dist/
 Thumbs.db
 .vite/
 coverage/
+
+# Config files with secrets
+opencode.json
+.mcp.json
+.claude/
