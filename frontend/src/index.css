@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface-50: #f8f9fa;
+  --surface-100: #f1f3f5;
+  --surface-200: #e9ecef;
+  --surface-300: #dee2e6;
+  --surface-400: #ced4da;
+  --surface-500: #adb5bd;
+  --surface-600: #868e96;
+  --surface-700: #495057;
+  --surface-800: #343a40;
+  --surface-900: #212529;
+
+  --brand-50: #eef2ff;
+  --brand-100: #e0e7ff;
+  --brand-200: #c7d2fe;
+  --brand-300: #a5b4fc;
+  --brand-400: #818cf8;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #4338ca;
+  --brand-800: #3730a3;
+  --brand-900: #312e81;
+}
+
+.dark {
+  --surface-50: #0f1117;
+  --surface-100: #1a1d24;
+  --surface-200: #23272e;
+  --surface-300: #2d3239;
+  --surface-400: #4a5058;
+  --surface-500: #6b7280;
+  --surface-600: #9ca3af;
+  --surface-700: #d1d5db;
+  --surface-800: #e5e7eb;
+  --surface-900: #f3f4f6;
+
+  --brand-50: #1e1b4b;
+  --brand-100: #312e81;
+  --brand-200: #3730a3;
+  --brand-300: #4338ca;
+  --brand-400: #4f46e5;
+  --brand-500: #6366f1;
+  --brand-600: #4f46e5;
+  --brand-700: #3730a3;
+  --brand-800: #312e81;
+  --brand-900: #1e1b4b;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-50 text-surface-900 antialiased;
+  }
+}
