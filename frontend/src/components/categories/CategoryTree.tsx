@@ -248,7 +248,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
         </h2>
         <Button
           variant="ghost"
-          size="md"
+          size="default"
           onClick={() => handleOpenRootDialog('folder')}
           className="h-9 w-9 p-0 rounded-xl"
           aria-label="Nueva carpeta"

@@ -62,7 +62,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
             <Flag size={14} className={priority.iconColor} />
             <span>{priority.label}</span>
           </div>
-          {task.notes_count > 0 && (
+          {(task.notes_count ?? 0) > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
               <MessageSquare size={14} />
               <span>{task.notes_count}</span>
