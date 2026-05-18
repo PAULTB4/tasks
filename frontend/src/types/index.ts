@@ -5,6 +5,10 @@ export interface Category {
   color: string | null
   parent_id: string | null
   type: 'folder' | 'list'
+  deleted_at: string | null
+  deleted_root_id: string | null
+  deleted_as: 'tree' | 'folder' | 'list' | null
+  deleted_original_parent_id: string | null
   created_at: string
 }
 

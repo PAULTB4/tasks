@@ -10,11 +10,17 @@ CREATE TABLE categories (
   color TEXT,
   parent_id UUID REFERENCES categories(id) ON DELETE SET NULL,
   type TEXT NOT NULL DEFAULT 'list' CHECK (type IN ('folder', 'list')),
+  deleted_at TIMESTAMPTZ,
+  deleted_root_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+  deleted_as TEXT CHECK (deleted_as IN ('tree', 'folder', 'list')),
+  deleted_original_parent_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_categories_user_id ON categories(user_id);
 CREATE INDEX idx_categories_parent_id ON categories(parent_id);
+CREATE INDEX idx_categories_deleted_at ON categories(deleted_at);
+CREATE INDEX idx_categories_deleted_root_id ON categories(deleted_root_id);
 
 -- Task statuses (Kanban columns)
 -- category_id = NULL means global status (default for all categories)

@@ -12,6 +12,7 @@ export function useCategories() {
       const { data, error } = await insforge
         .database.from('categories')
         .select('*')
+        .is('deleted_at', null)
         .order('name')
 
       if (error) throw error
@@ -54,21 +55,74 @@ export function useCategories() {
   })
 
   const deleteCategory = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async (input: {
+      ids: string[]
+      rootId: string
+      deletedAs: 'tree' | 'folder' | 'list'
+    }) => {
+      const ids = input.ids
+
+      if (ids.length === 0) return
+
+      const categoryDelete = await insforge
+        .database.from('categories')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_root_id: input.rootId,
+          deleted_as: input.deletedAs,
+        })
+        .in('id', ids)
+
+      if (categoryDelete.error) throw categoryDelete.error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['trash-categories'] })
+    },
+  })
+
+  return { ...query, createCategory, updateCategory, deleteCategory }
+}
+
+export function useTrashCategories() {
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: ['trash-categories'],
+    queryFn: async () => {
+      const { data, error } = await insforge
+        .database.from('categories')
+        .select('*')
+        .order('deleted_at', { ascending: false })
+
+      if (error) throw error
+      return (data as Category[]).filter((category) => category.deleted_at)
+    },
+  })
+
+  const restoreCategory = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return
+
       const { error } = await insforge
         .database.from('categories')
-        .delete()
-        .eq('id', id)
+        .update({
+          deleted_at: null,
+          deleted_root_id: null,
+          deleted_as: null,
+        })
+        .in('id', ids)
 
       if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['trash-categories'] })
     },
   })
 
-  return { ...query, createCategory, updateCategory, deleteCategory }
+  return { ...query, restoreCategory }
 }
 
 export function buildCategoryTree(categories: Category[]): Category[] {

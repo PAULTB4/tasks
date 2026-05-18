@@ -39,14 +39,11 @@ export function FolderChildrenGrid({ categoryId }: FolderChildrenGridProps) {
                 onClick={() => navigate(`/dashboard/category/${child.id}`)}
                 className="group flex items-start gap-4 p-5 bg-white dark:bg-surface-800 rounded-xl border border-surface-200 dark:border-surface-700 hover:border-brand-300 dark:hover:border-brand-600 hover:shadow-md transition-all text-left"
               >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${child.color || '#6366f1'}18` }}
-                >
+                <div className="w-10 h-10 rounded-lg bg-surface-100 dark:bg-surface-700 flex items-center justify-center flex-shrink-0">
                   {isFolder ? (
-                    <Folder size={20} style={{ color: child.color || '#f59e0b' }} />
+                    <Folder size={20} className="text-amber-500" />
                   ) : (
-                    <List size={20} style={{ color: child.color || '#6366f1' }} />
+                    <List size={20} className="text-brand-500" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

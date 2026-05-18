@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dialog } from '../ui/Dialog'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -10,9 +10,10 @@ interface CreateCategoryDialogProps {
   onClose: () => void
   onSubmit: (name: string, color: string, parentId: string | null, type: 'folder' | 'list') => void
   isSubmitting: boolean
+  defaultType?: 'folder' | 'list'
 }
 
-const colors = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+const DEFAULT_CATEGORY_COLOR = '#6366f1'
 
 export function CreateCategoryDialog({
   parentId,
@@ -20,24 +21,28 @@ export function CreateCategoryDialog({
   onClose,
   onSubmit,
   isSubmitting,
+  defaultType = 'list',
 }: CreateCategoryDialogProps) {
   const [name, setName] = useState('')
-  const [color, setColor] = useState(colors[0])
-  const [type, setType] = useState<'folder' | 'list'>('list')
+  const [type, setType] = useState<'folder' | 'list'>(defaultType)
+
+  useEffect(() => {
+    if (open) {
+      setType(defaultType)
+    }
+  }, [open, defaultType])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    onSubmit(name.trim(), color, parentId ?? null, type)
+    onSubmit(name.trim(), DEFAULT_CATEGORY_COLOR, parentId ?? null, type)
     setName('')
-    setColor(colors[0])
-    setType('list')
+    setType(defaultType)
   }
 
   const handleClose = () => {
     setName('')
-    setColor(colors[0])
-    setType('list')
+    setType(defaultType)
     onClose()
   }
 
@@ -45,7 +50,7 @@ export function CreateCategoryDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      title={parentId ? 'Nueva sub-categoría' : 'Nueva categoría'}
+      title={parentId ? 'Nueva lista o carpeta' : 'Nueva carpeta o lista'}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -99,26 +104,6 @@ export function CreateCategoryDialog({
               ? 'Las carpetas contienen subcarpetas o listas. No pueden tener tareas.'
               : 'Las listas contienen tareas. No pueden tener subcarpetas.'}
           </p>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-            Color
-          </label>
-          <div className="flex gap-3">
-            {colors.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setColor(c)}
-                className={`w-8 h-8 rounded-full border-2 transition-transform transform ${
-                  color === c
-                    ? 'border-surface-900 dark:border-white scale-110'
-                    : 'border-transparent'
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
         </div>
         <div className="flex gap-3 justify-end pt-4">
           <Button type="button" variant="ghost" onClick={handleClose}>

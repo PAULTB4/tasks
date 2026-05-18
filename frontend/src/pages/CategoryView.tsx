@@ -20,7 +20,7 @@ export function CategoryView() {
         <div className="text-center p-8 border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
           <Folder size={48} className="mx-auto text-surface-300 dark:text-surface-700" />
           <p className="mt-4 text-lg font-medium text-surface-600 dark:text-surface-400">
-            Seleccioná una categoría
+            Seleccioná una carpeta o lista
           </p>
           <p className="text-sm text-surface-500 dark:text-surface-500 mt-1">
             Elegí una del panel izquierdo para ver su contenido.
@@ -44,10 +44,6 @@ export function CategoryView() {
         <header className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-3">
             <Folder size={20} className="text-amber-500" />
-            <span
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: category.color || '#6366f1' }}
-            />
             <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">
               {category.name}
             </h2>
@@ -68,10 +64,6 @@ export function CategoryView() {
       <header className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <List size={20} className="text-brand-500" />
-          <span
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: category.color || '#6366f1' }}
-          />
           <h2 className="text-xl font-semibold text-surface-900 dark:text-surface-100">
             {category.name}
           </h2>
@@ -103,7 +95,7 @@ export function CategoryView() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="min-h-0 flex-1 overflow-hidden">
         {viewMode === 'kanban' ? (
           <KanbanBoard categoryId={categoryId} />
         ) : (
