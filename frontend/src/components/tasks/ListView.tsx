@@ -4,7 +4,7 @@ import { useTasks } from '../../hooks/useTasks'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TaskDetailModal } from '../tasks/TaskDetailModal'
 import type { Priority } from '../../types'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Clock } from 'lucide-react'
 import { WarningDialog } from '../warnings/WarningDialog'
 
 const priorityLabels: Record<Priority, { label: string; color: string }> = {
@@ -12,6 +12,22 @@ const priorityLabels: Record<Priority, { label: string; color: string }> = {
   medium: { label: 'Media', color: 'bg-amber-100 text-amber-700' },
   high: { label: 'Alta', color: 'bg-orange-100 text-orange-700' },
   urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700' },
+}
+
+function getDueDateInfo(dueDate: string): { label: string; color: string } {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const due = new Date(dueDate)
+  due.setHours(0, 0, 0, 0)
+  const diffMs = due.getTime() - now.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) return { label: 'Vencido', color: 'text-red-600 dark:text-red-400' }
+  if (diffDays === 0) return { label: 'Hoy', color: 'text-red-600 dark:text-red-400' }
+  if (diffDays === 1) return { label: '1d', color: 'text-orange-600 dark:text-orange-400' }
+  if (diffDays <= 3) return { label: `${diffDays}d`, color: 'text-amber-600 dark:text-amber-400' }
+  if (diffDays <= 7) return { label: `${diffDays}d`, color: 'text-blue-600 dark:text-blue-400' }
+  return { label: `${diffDays}d`, color: 'text-surface-500 dark:text-surface-400' }
 }
 
 interface ListViewProps {
@@ -61,13 +77,13 @@ export function ListView({ categoryId }: ListViewProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-4 px-4 py-3 border-b border-surface-100 dark:border-surface-800">
+      <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 sm:py-3 border-b border-surface-100 dark:border-surface-800">
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as Priority | 'all')}
           className="text-xs px-2 py-1.5 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
-          <option value="all">Todas las prioridades</option>
+          <option value="all">Todas</option>
           <option value="low">Baja</option>
           <option value="medium">Media</option>
           <option value="high">Alta</option>
@@ -90,10 +106,11 @@ export function ListView({ categoryId }: ListViewProps) {
           <div className="divide-y divide-surface-100 dark:divide-surface-800">
             {filteredTasks?.map((task) => {
               const priority = priorityLabels[task.priority]
+              const dueInfo = task.due_date ? getDueDateInfo(task.due_date) : null
               return (
                 <div
                   key={task.id}
-                  className="group flex items-center gap-2 px-4 py-3 transition-colors hover:bg-surface-50 dark:hover:bg-surface-900"
+                  className="group flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 transition-colors hover:bg-surface-50 dark:hover:bg-surface-900"
                 >
                   <button
                     type="button"
@@ -101,24 +118,24 @@ export function ListView({ categoryId }: ListViewProps) {
                       setEditingTask(false)
                       setSelectedTask(task)
                     }}
-                    className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                    className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4 text-left"
                   >
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{task.title}</h4>
                       {task.description && (
-                        <p className="text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
+                        <p className="hidden sm:block text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
                       )}
                     </div>
                     <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.color}`}>
                       {priority.label}
                     </span>
-                    {task.due_date && (
-                      <span className="text-[10px] text-surface-400 flex-shrink-0">
-                        {new Date(task.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                    {dueInfo && (
+                      <span className={`text-[10px] font-medium flex-shrink-0 ${dueInfo.color}`}>
+                        {dueInfo.label}
                       </span>
                     )}
                   </button>
-                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                  <div className="flex shrink-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={() => {

@@ -5,6 +5,7 @@ import { CreateCategoryDialog } from './CreateCategoryDialog'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TrashDialog } from './TrashDialog'
 import { DeleteWarningDialog } from '../warnings/DeleteWarningDialog'
+import { CategoryActionsMenu } from './CategoryActionsMenu'
 import type { Category } from '../../types'
 import {
   ChevronDown,
@@ -26,6 +27,7 @@ function CategoryNode({
   onSelect,
   onCreateSub,
   onCreateTask,
+  onEdit,
   onDelete,
   pendingTaskCounts,
   expandedCategoryIds,
@@ -39,6 +41,7 @@ function CategoryNode({
   onSelect: (id: string) => void
   onCreateSub: (parentId: string) => void
   onCreateTask: (categoryId: string) => void
+  onEdit: (id: string) => void
   onDelete: (id: string) => void
   pendingTaskCounts: Record<string, number>
   expandedCategoryIds: string[] | null
@@ -118,35 +121,19 @@ function CategoryNode({
           )}
         </button>
 
-        <div className="pr-1 sm:pr-2 flex items-center gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
+        <div className="pr-1 sm:pr-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          <CategoryActionsMenu
+            isFolder={isFolder}
+            onAdd={() => {
               if (isFolder) {
                 onCreateSub(category.id)
               } else {
                 onCreateTask(category.id)
               }
             }}
-            className="inline-flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-surface-500 hover:bg-surface-200 hover:text-brand-600 dark:text-surface-400 dark:hover:bg-surface-700 dark:hover:text-brand-300 transition-colors"
-            aria-label={isFolder ? 'Nueva lista o carpeta' : 'Nueva tarea'}
-            title={isFolder ? 'Nueva lista o carpeta' : 'Nueva tarea'}
-          >
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(category.id)
-            }}
-            className="inline-flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 transition-colors"
-            aria-label="Eliminar"
-            title="Eliminar"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={2.3} />
-          </button>
+            onEdit={() => onEdit(category.id)}
+            onDelete={() => onDelete(category.id)}
+          />
         </div>
       </div>
       {expanded && isFolder && children.length > 0 && (
@@ -161,6 +148,7 @@ function CategoryNode({
               onSelect={onSelect}
               onCreateSub={onCreateSub}
               onCreateTask={onCreateTask}
+              onEdit={onEdit}
               onDelete={onDelete}
               pendingTaskCounts={pendingTaskCounts}
               expandedCategoryIds={expandedCategoryIds}
@@ -184,6 +172,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
     data: categories,
     isLoading,
     createCategory,
+    updateCategory,
     deleteCategory,
   } = useCategories()
   const { data: deletedCategories } = useTrashCategories()
@@ -206,6 +195,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   >('folder')
   const [taskCategoryId, setTaskCategoryId] = useState<string | null>(null)
   const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null)
+  const [categoryToEditId, setCategoryToEditId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
 
   const rootCategories = categories?.filter((c) => !c.parent_id) ?? []
@@ -275,6 +265,17 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
 
   const handleDelete = (id: string) => {
     setCategoryToDeleteId(id)
+  }
+
+  const handleEdit = (id: string) => {
+    setCategoryToEditId(id)
+  }
+
+  const handleRename = (id: string, name: string) => {
+    updateCategory.mutate(
+      { id, name },
+      { onSuccess: () => setCategoryToEditId(null) },
+    )
   }
 
   const handleConfirmDelete = () => {
@@ -360,6 +361,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
               onSelect={onSelect}
               onCreateSub={handleCreateSub}
               onCreateTask={handleCreateTask}
+              onEdit={handleEdit}
               onDelete={handleDelete}
               pendingTaskCounts={pendingTaskCounts ?? {}}
               expandedCategoryIds={expandedCategoryIds}
@@ -398,6 +400,20 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
         isSubmitting={createCategory.isPending}
         defaultType={defaultCategoryType}
       />
+
+      {categoryToEditId && (() => {
+        const cat = categories?.find((c) => c.id === categoryToEditId)
+        return cat ? (
+          <CreateCategoryDialog
+            editCategory={{ id: cat.id, name: cat.name, type: cat.type }}
+            open={!!categoryToEditId}
+            onClose={() => setCategoryToEditId(null)}
+            onSubmit={() => {}}
+            onEditSubmit={handleRename}
+            isSubmitting={updateCategory.isPending}
+          />
+        ) : null
+      })()}
 
       {taskCategoryId && (
         <CreateTaskDialog

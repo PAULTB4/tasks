@@ -69,22 +69,22 @@ export function KanbanColumn({
 
   return (
     <div
-      className={`flex-shrink-0 w-80 flex flex-col rounded-xl transition-colors ${
+      className={`flex flex-col snap-center transition-colors ${
         isOver
           ? 'bg-brand-50/50 dark:bg-brand-900/20'
           : 'bg-surface-100 dark:bg-surface-900'
-      }`}
+      } w-full sm:w-auto sm:flex-1 sm:rounded-xl min-h-[100dvh] sm:min-h-0`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b-2 border-surface-200 dark:border-surface-700">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b-2 border-surface-200 dark:border-surface-700">
         <div className="flex items-center gap-2">
           <span
-            className="w-3 h-3 rounded-full"
+            className="w-2.5 h-2.5 rounded-full"
             style={{ backgroundColor: status.color }}
           />
-          <h3 className="text-base font-semibold text-surface-800 dark:text-surface-200">
+          <h3 className="text-sm sm:text-base font-semibold text-surface-800 dark:text-surface-200">
             {status.name}
           </h3>
-          <span className="text-sm font-medium text-surface-500 dark:text-surface-400">
+          <span className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400">
             {tasks.length}
           </span>
         </div>
@@ -93,13 +93,13 @@ export function KanbanColumn({
           className="text-surface-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
           title="Agregar tarea"
         >
-          <Plus size={20} />
+          <Plus size={18} />
         </button>
       </div>
 
       <div
         ref={setNodeRef}
-        className="flex-1 p-3 space-y-3 overflow-y-auto min-h-[120px]"
+        className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-3 space-y-2 sm:space-y-3"
       >
         <SortableContext
           items={tasks.map((t) => t.id)}
