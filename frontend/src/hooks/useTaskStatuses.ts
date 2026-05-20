@@ -11,11 +11,12 @@ export function useTaskStatuses(categoryId?: string | null) {
   const userId = useAuthStore((s) => s.user?.id)
 
   const query = useQuery({
-    queryKey: ['task_statuses', categoryId ?? 'global'],
+    queryKey: ['task_statuses', categoryId ?? 'global', userId],
     queryFn: async () => {
       const { data: globalData, error: globalError } = await insforge
         .database.from('task_statuses')
         .select('*')
+        .eq('user_id', userId!)
         .is('category_id', null)
         .order('position')
 
@@ -28,6 +29,7 @@ export function useTaskStatuses(categoryId?: string | null) {
       const { data: categoryData, error: categoryError } = await insforge
         .database.from('task_statuses')
         .select('*')
+        .eq('user_id', userId!)
         .eq('category_id', categoryId)
         .order('position')
 

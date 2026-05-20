@@ -89,3 +89,41 @@ CREATE TRIGGER update_tasks_updated_at
 CREATE TRIGGER update_task_notes_updated_at
   BEFORE UPDATE ON task_notes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- User isolation for PostgREST/InsForge requests
+CREATE OR REPLACE FUNCTION current_app_user_id()
+RETURNS TEXT
+LANGUAGE SQL
+STABLE
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.sub', true), ''),
+    NULLIF(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub', ''),
+    NULLIF(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'user_id', '')
+  )
+$$;
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_statuses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY categories_user_isolation ON categories
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY task_statuses_user_isolation ON task_statuses
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY tasks_user_isolation ON tasks
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY task_notes_user_isolation ON task_notes
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());

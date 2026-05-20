@@ -27,7 +27,7 @@ interface UpdateTaskInput {
 export function useTasks(categoryId?: string) {
   const queryClient = useQueryClient()
   const userId = useAuthStore((s) => s.user?.id)
-  const queryKey = useMemo(() => ['tasks', categoryId] as const, [categoryId])
+  const queryKey = useMemo(() => ['tasks', categoryId, userId] as const, [categoryId, userId])
 
   useEffect(() => {
     if (!categoryId || !userId) return
@@ -95,6 +95,7 @@ export function useTasks(categoryId?: string) {
       let q = insforge
         .database.from('tasks')
         .select('*')
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false })
 
       if (categoryId) {
@@ -105,7 +106,7 @@ export function useTasks(categoryId?: string) {
       if (error) throw error
       return data as Task[]
     },
-    enabled: !!categoryId,
+    enabled: !!categoryId && !!userId,
   })
 
   const createTask = useMutation({
@@ -136,6 +137,7 @@ export function useTasks(categoryId?: string) {
         .database.from('tasks')
         .update(input)
         .eq('id', id)
+        .eq('user_id', useAuthStore.getState().user?.id)
         .select()
         .single()
 
@@ -173,6 +175,7 @@ export function useTasks(categoryId?: string) {
         .database.from('tasks')
         .delete()
         .eq('id', id)
+        .eq('user_id', useAuthStore.getState().user?.id)
 
       if (error) throw error
     },
@@ -204,11 +207,11 @@ export function usePendingTaskCounts() {
   const userId = useAuthStore((s) => s.user?.id)
 
   return useQuery({
-    queryKey: ['pending-task-counts'],
+    queryKey: ['pending-task-counts', userId],
     queryFn: async () => {
       const [tasksResult, statusesResult] = await Promise.all([
-        insforge.database.from('tasks').select('category_id,status_id'),
-        insforge.database.from('task_statuses').select('id,name'),
+        insforge.database.from('tasks').select('category_id,status_id').eq('user_id', userId!),
+        insforge.database.from('task_statuses').select('id,name').eq('user_id', userId!),
       ])
 
       if (tasksResult.error) throw tasksResult.error

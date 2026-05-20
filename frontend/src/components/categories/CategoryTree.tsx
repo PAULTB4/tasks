@@ -4,6 +4,7 @@ import { usePendingTaskCounts, useTasks } from '../../hooks/useTasks'
 import { CreateCategoryDialog } from './CreateCategoryDialog'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TrashDialog } from './TrashDialog'
+import { DeleteWarningDialog } from '../warnings/DeleteWarningDialog'
 import type { Category } from '../../types'
 import {
   ChevronDown,
@@ -204,6 +205,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
     'folder' | 'list'
   >('folder')
   const [taskCategoryId, setTaskCategoryId] = useState<string | null>(null)
+  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
 
   const rootCategories = categories?.filter((c) => !c.parent_id) ?? []
@@ -212,6 +214,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   ).length
   const getChildren = (parentId: string) =>
     categories?.filter((c) => c.parent_id === parentId) ?? []
+  const categoryToDelete = categories?.find((item) => item.id === categoryToDeleteId)
 
   useEffect(() => {
     if (!expandedCategoryIds) return
@@ -245,6 +248,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
       ...directChildren.flatMap((child) => getDescendantIds(child.id)),
     ]
   }
+  const categoryToDeleteIds = categoryToDeleteId ? getDescendantIds(categoryToDeleteId) : []
 
   const handleCreate = (
     name: string,
@@ -270,15 +274,24 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   }
 
   const handleDelete = (id: string) => {
-    const category = categories?.find((item) => item.id === id)
-    const ids = getDescendantIds(id)
+    setCategoryToDeleteId(id)
+  }
+
+  const handleConfirmDelete = () => {
+    if (!categoryToDeleteId) return
+
+    const category = categories?.find((item) => item.id === categoryToDeleteId)
+    const ids = getDescendantIds(categoryToDeleteId)
     const deletedAs = category?.type === 'list'
       ? 'list'
       : ids.length > 1
         ? 'tree'
         : 'folder'
 
-    deleteCategory.mutate({ ids, rootId: id, deletedAs })
+    deleteCategory.mutate(
+      { ids, rootId: categoryToDeleteId, deletedAs },
+      { onSuccess: () => setCategoryToDeleteId(null) },
+    )
   }
 
   const handleOpenRootDialog = (type: 'folder' | 'list' = 'folder') => {
@@ -398,6 +411,19 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
             )
           }}
           isSubmitting={createTask.isPending}
+        />
+      )}
+
+      {categoryToDelete && (
+        <DeleteWarningDialog
+          open={!!categoryToDelete}
+          title="Confirmar eliminación"
+          itemName={categoryToDelete.name}
+          itemType={categoryToDelete.type}
+          affectedCount={categoryToDeleteIds.length}
+          isDeleting={deleteCategory.isPending}
+          onClose={() => setCategoryToDeleteId(null)}
+          onConfirm={handleConfirmDelete}
         />
       )}
 
