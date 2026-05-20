@@ -61,6 +61,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setAvatarUrl(profile.avatar_url ?? '')
     setMessage(null)
     setError(null)
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
   }, [open, profile.name, profile.avatar_url])
 
   if (!open) return null
@@ -149,7 +154,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setMessage('Foto de perfil eliminada. Se mostrará un avatar por defecto.')
   }
 
-  const handleSendPasswordReset = async () => {
+  const [passwordStep, setPasswordStep] = useState<'send' | 'verify' | 'reset'>('send')
+  const [resetOtp, setResetOtp] = useState(['', '', '', '', '', ''])
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  const handleSendResetCode = async () => {
     if (!user?.email) return
     setSendingReset(true)
     setMessage(null)
@@ -163,11 +175,101 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setSendingReset(false)
 
     if (error) {
-      setError(error.message || 'No se pudo enviar el correo de cambio de clave.')
+      setError(error.message || 'No se pudo enviar el codigo.')
       return
     }
 
-    setMessage('Te enviamos un correo para cambiar tu clave.')
+    setPasswordStep('verify')
+    setResetOtp(['', '', '', '', '', ''])
+    setTimeout(() => resetOtpRefs.current[0]?.focus(), 100)
+  }
+
+  const handleResetOtpChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return
+    const next = [...resetOtp]
+    next[index] = value
+    setResetOtp(next)
+    if (value && index < 5) {
+      resetOtpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleResetOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !resetOtp[index] && index > 0) {
+      resetOtpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleVerifyResetCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const code = resetOtp.join('')
+    if (code.length !== 6) {
+      setError('Ingresa el codigo completo de 6 digitos')
+      return
+    }
+    setError('')
+    setSendingReset(true)
+
+    const { data, error } = await insforge.auth.exchangeResetPasswordToken({
+      email: user!.email,
+      code,
+    })
+
+    setSendingReset(false)
+
+    if (error) {
+      setError(error.message || 'Codigo invalido o expirado')
+      return
+    }
+
+    setResetToken(data.token)
+    setPasswordStep('reset')
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (newPassword.length < 6) {
+      setError('La clave debe tener al menos 6 caracteres')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Las claves no coinciden')
+      return
+    }
+
+    setSendingReset(true)
+
+    const { error } = await insforge.auth.resetPassword({
+      newPassword,
+      otp: resetToken,
+    })
+
+    setSendingReset(false)
+
+    if (error) {
+      setError(error.message || 'No se pudo cambiar la clave.')
+      return
+    }
+
+    setMessage('Clave cambiada correctamente.')
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
+  }
+
+  const cancelPasswordChange = () => {
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
+    setError(null)
   }
 
   return (
@@ -359,17 +461,91 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         Cambiar clave
                       </h4>
                       <p className="text-sm text-surface-500">
-                        Te enviamos un correo seguro para resetearla.
+                        {passwordStep === 'send' && 'Te enviamos un codigo a tu email para verificar tu identidad.'}
+                        {passwordStep === 'verify' && 'Ingresa el codigo de 6 digitos que enviamos a tu email.'}
+                        {passwordStep === 'reset' && 'Elegi tu nueva clave.'}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    onClick={handleSendPasswordReset}
-                    disabled={sendingReset || !user?.email}
-                  >
-                    {sendingReset ? 'Enviando...' : 'Enviar correo de cambio'}
-                  </Button>
+
+                  {passwordStep === 'send' && (
+                    <Button
+                      type="button"
+                      onClick={handleSendResetCode}
+                      disabled={sendingReset || !user?.email}
+                    >
+                      {sendingReset ? 'Enviando...' : 'Enviar codigo'}
+                    </Button>
+                  )}
+
+                  {passwordStep === 'verify' && (
+                    <form onSubmit={handleVerifyResetCode} className="space-y-4">
+                      <div className="flex gap-2 justify-center">
+                        {resetOtp.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { resetOtpRefs.current[i] = el }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleResetOtpChange(i, e.target.value)}
+                            onKeyDown={(e) => handleResetOtpKeyDown(i, e)}
+                            className="w-12 h-14 text-center text-xl font-bold border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          />
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          disabled={sendingReset || resetOtp.join('').length !== 6}
+                        >
+                          {sendingReset ? 'Verificando...' : 'Verificar'}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={cancelPasswordChange}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+
+                  {passwordStep === 'reset' && (
+                    <form onSubmit={handleChangePassword} className="space-y-3">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-surface-700 dark:text-surface-300">
+                          Nueva clave
+                        </label>
+                        <Input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Minimo 6 caracteres"
+                          minLength={6}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-surface-700 dark:text-surface-300">
+                          Confirmar clave
+                        </label>
+                        <Input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repeti la nueva clave"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button type="submit" disabled={sendingReset}>
+                          {sendingReset ? 'Guardando...' : 'Cambiar clave'}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={cancelPasswordChange}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </div>
             )}
