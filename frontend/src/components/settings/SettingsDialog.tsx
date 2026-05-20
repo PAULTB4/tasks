@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Camera, KeyRound, Mail, Shield, User, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Camera, KeyRound, Mail, Shield, Upload, User, X } from 'lucide-react'
 import { insforge } from '../../lib/insforge'
 import { useAuthStore } from '../../hooks/useAuthStore'
 import { Button } from '../ui/Button'
@@ -51,6 +51,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const profile = user?.profile ?? {}
   const fallbackAvatar = `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email ?? 'taskforge'}`
   const previewAvatar = avatarUrl.trim() || profile.avatar_url || fallbackAvatar
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [passwordStep, setPasswordStep] = useState<'send' | 'verify' | 'reset'>('send')
+  const [resetOtp, setResetOtp] = useState(['', '', '', '', '', ''])
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
     if (!open) return
@@ -59,6 +67,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setAvatarUrl(profile.avatar_url ?? '')
     setMessage(null)
     setError(null)
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
   }, [open, profile.name, profile.avatar_url])
 
   if (!open) return null
@@ -85,7 +98,69 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setMessage('Perfil actualizado.')
   }
 
-  const handleSendPasswordReset = async () => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Solo se permiten archivos de imagen.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar los 5 MB.')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    const { data, error: uploadError } = await insforge.storage
+      .from('avatars')
+      .uploadAuto(file)
+
+    setUploading(false)
+
+    if (uploadError) {
+      setError(uploadError.message || 'No se pudo subir la imagen.')
+      return
+    }
+
+    const newUrl = data.url
+    setAvatarUrl(newUrl)
+
+    // Auto-save immediately so sidebar updates without reload
+    const { data: profileData, error: profileError } = await insforge.auth.setProfile({
+      avatar_url: newUrl,
+    })
+
+    if (profileError) {
+      setError(profileError.message || 'Se subio la imagen pero no se pudo guardar el perfil.')
+      return
+    }
+
+    updateProfile({ avatar_url: newUrl })
+    setMessage('Imagen subida y guardada correctamente.')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleRemoveAvatar = async () => {
+    setAvatarUrl('')
+
+    const { data, error } = await insforge.auth.setProfile({
+      avatar_url: null,
+    })
+
+    if (error) {
+      setError(error.message || 'No se pudo quitar la foto del perfil.')
+      return
+    }
+
+    updateProfile({ avatar_url: null })
+    setMessage('Foto de perfil eliminada. Se mostrará un avatar por defecto.')
+  }
+
+  const handleSendResetCode = async () => {
     if (!user?.email) return
     setSendingReset(true)
     setMessage(null)
@@ -99,11 +174,101 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setSendingReset(false)
 
     if (error) {
-      setError(error.message || 'No se pudo enviar el correo de cambio de clave.')
+      setError(error.message || 'No se pudo enviar el codigo.')
       return
     }
 
-    setMessage('Te enviamos un correo para cambiar tu clave.')
+    setPasswordStep('verify')
+    setResetOtp(['', '', '', '', '', ''])
+    setTimeout(() => resetOtpRefs.current[0]?.focus(), 100)
+  }
+
+  const handleResetOtpChange = (index: number, value: string) => {
+    if (!/^\d?$/.test(value)) return
+    const next = [...resetOtp]
+    next[index] = value
+    setResetOtp(next)
+    if (value && index < 5) {
+      resetOtpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleResetOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !resetOtp[index] && index > 0) {
+      resetOtpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleVerifyResetCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const code = resetOtp.join('')
+    if (code.length !== 6) {
+      setError('Ingresa el codigo completo de 6 digitos')
+      return
+    }
+    setError('')
+    setSendingReset(true)
+
+    const { data, error } = await insforge.auth.exchangeResetPasswordToken({
+      email: user!.email,
+      code,
+    })
+
+    setSendingReset(false)
+
+    if (error) {
+      setError(error.message || 'Codigo invalido o expirado')
+      return
+    }
+
+    setResetToken(data.token)
+    setPasswordStep('reset')
+    setNewPassword('')
+    setConfirmPassword('')
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (newPassword.length < 6) {
+      setError('La clave debe tener al menos 6 caracteres')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Las claves no coinciden')
+      return
+    }
+
+    setSendingReset(true)
+
+    const { error } = await insforge.auth.resetPassword({
+      newPassword,
+      otp: resetToken,
+    })
+
+    setSendingReset(false)
+
+    if (error) {
+      setError(error.message || 'No se pudo cambiar la clave.')
+      return
+    }
+
+    setMessage('Clave cambiada correctamente.')
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
+  }
+
+  const cancelPasswordChange = () => {
+    setPasswordStep('send')
+    setResetToken('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setResetOtp(['', '', '', '', '', ''])
+    setError(null)
   }
 
   return (
@@ -208,23 +373,57 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               <form onSubmit={handleSaveProfile} className="space-y-6">
                 <div className="rounded-3xl border border-surface-200 bg-surface-50 p-5 dark:border-surface-800 dark:bg-surface-950">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <img
-                      src={previewAvatar}
-                      alt="Foto de perfil"
-                      className="h-24 w-24 rounded-3xl border border-surface-200 bg-surface-200 object-cover dark:border-surface-700"
-                    />
+                    <div className="relative group">
+                      <img
+                        src={previewAvatar}
+                        alt="Foto de perfil"
+                        className="h-24 w-24 rounded-3xl border border-surface-200 bg-surface-200 object-cover dark:border-surface-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="absolute inset-0 flex items-center justify-center rounded-3xl bg-black/40 opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100 disabled:cursor-not-allowed"
+                        title="Cambiar foto"
+                      >
+                        <Upload size={20} className="text-white" />
+                      </button>
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
                         <Camera size={16} />
                         Foto de perfil
                       </div>
                       <p className="mb-3 text-sm text-surface-500">
-                        Por ahora usá una URL de imagen. Más adelante podemos sumar upload real con Storage.
+                        Hacé clic en la foto para subir una imagen desde tu dispositivo.
                       </p>
-                      <Input
-                        value={avatarUrl}
-                        onChange={(event) => setAvatarUrl(event.target.value)}
-                        placeholder="https://.../avatar.png"
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? 'Subiendo...' : 'Subir imagen'}
+                        </Button>
+                        {(avatarUrl.trim() || profile.avatar_url) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveAvatar}
+                          >
+                            Quitar
+                          </Button>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
                       />
                     </div>
                   </div>
@@ -261,17 +460,91 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         Cambiar clave
                       </h4>
                       <p className="text-sm text-surface-500">
-                        Te enviamos un correo seguro para resetearla.
+                        {passwordStep === 'send' && 'Te enviamos un codigo a tu email para verificar tu identidad.'}
+                        {passwordStep === 'verify' && 'Ingresa el codigo de 6 digitos que enviamos a tu email.'}
+                        {passwordStep === 'reset' && 'Elegi tu nueva clave.'}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    onClick={handleSendPasswordReset}
-                    disabled={sendingReset || !user?.email}
-                  >
-                    {sendingReset ? 'Enviando...' : 'Enviar correo de cambio'}
-                  </Button>
+
+                  {passwordStep === 'send' && (
+                    <Button
+                      type="button"
+                      onClick={handleSendResetCode}
+                      disabled={sendingReset || !user?.email}
+                    >
+                      {sendingReset ? 'Enviando...' : 'Enviar codigo'}
+                    </Button>
+                  )}
+
+                  {passwordStep === 'verify' && (
+                    <form onSubmit={handleVerifyResetCode} className="space-y-4">
+                      <div className="flex gap-2 justify-center">
+                        {resetOtp.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { resetOtpRefs.current[i] = el }}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleResetOtpChange(i, e.target.value)}
+                            onKeyDown={(e) => handleResetOtpKeyDown(i, e)}
+                            className="w-12 h-14 text-center text-xl font-bold border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          />
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          disabled={sendingReset || resetOtp.join('').length !== 6}
+                        >
+                          {sendingReset ? 'Verificando...' : 'Verificar'}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={cancelPasswordChange}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+
+                  {passwordStep === 'reset' && (
+                    <form onSubmit={handleChangePassword} className="space-y-3">
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-surface-700 dark:text-surface-300">
+                          Nueva clave
+                        </label>
+                        <Input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Minimo 6 caracteres"
+                          minLength={6}
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-surface-700 dark:text-surface-300">
+                          Confirmar clave
+                        </label>
+                        <Input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Repeti la nueva clave"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button type="submit" disabled={sendingReset}>
+                          {sendingReset ? 'Guardando...' : 'Cambiar clave'}
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={cancelPasswordChange}>
+                          Cancelar
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </div>
             )}
@@ -286,9 +559,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                   <p className="mt-2 text-xs text-surface-400">
                     Cambio de correo queda preparado para una próxima iteración cuando definamos flujo de verificación.
                   </p>
-                </div>
-                <div className="rounded-3xl border border-surface-200 bg-surface-50 p-5 text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-950">
-                  ID de usuario: <span className="font-mono text-surface-700 dark:text-surface-300">{user?.id}</span>
                 </div>
               </div>
             )}
