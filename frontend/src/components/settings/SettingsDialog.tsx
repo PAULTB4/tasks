@@ -104,24 +104,48 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setUploading(true)
     setError(null)
 
-    const { data, error } = await insforge.storage
+    const { data, error: uploadError } = await insforge.storage
       .from('avatars')
       .uploadAuto(file)
 
     setUploading(false)
 
-    if (error) {
-      setError(error.message || 'No se pudo subir la imagen.')
+    if (uploadError) {
+      setError(uploadError.message || 'No se pudo subir la imagen.')
       return
     }
 
-    setAvatarUrl(data.url)
-    setMessage('Imagen subida correctamente.')
+    const newUrl = data.url
+    setAvatarUrl(newUrl)
+
+    // Auto-save immediately so sidebar updates without reload
+    const { data: profileData, error: profileError } = await insforge.auth.setProfile({
+      avatar_url: newUrl,
+    })
+
+    if (profileError) {
+      setError(profileError.message || 'Se subio la imagen pero no se pudo guardar el perfil.')
+      return
+    }
+
+    updateProfile({ avatar_url: newUrl })
+    setMessage('Imagen subida y guardada correctamente.')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  const handleRemoveAvatar = () => {
+  const handleRemoveAvatar = async () => {
     setAvatarUrl('')
+
+    const { data, error } = await insforge.auth.setProfile({
+      avatar_url: null,
+    })
+
+    if (error) {
+      setError(error.message || 'No se pudo quitar la foto del perfil.')
+      return
+    }
+
+    updateProfile({ avatar_url: null })
     setMessage('Foto de perfil eliminada. Se mostrará un avatar por defecto.')
   }
 
