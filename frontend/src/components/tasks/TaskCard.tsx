@@ -1,5 +1,5 @@
 import type { Task, Priority } from '../../types'
-import { Flag, MessageSquare, Pencil, Trash2 } from 'lucide-react'
+import { Flag, MessageSquare, Pencil, Trash2, Clock } from 'lucide-react'
 
 const priorityConfig: Record<
   Priority,
@@ -31,6 +31,32 @@ const priorityConfig: Record<
   },
 }
 
+function getDueDateInfo(dueDate: string): { label: string; color: string; darkColor: string } {
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const due = new Date(dueDate)
+  due.setHours(0, 0, 0, 0)
+  const diffMs = due.getTime() - now.getTime()
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 0) {
+    return { label: 'Vencido', color: 'text-red-600', darkColor: 'dark:text-red-400' }
+  }
+  if (diffDays === 0) {
+    return { label: 'Hoy', color: 'text-red-600', darkColor: 'dark:text-red-400' }
+  }
+  if (diffDays === 1) {
+    return { label: '1d', color: 'text-orange-600', darkColor: 'dark:text-orange-400' }
+  }
+  if (diffDays <= 3) {
+    return { label: `${diffDays}d`, color: 'text-amber-600', darkColor: 'dark:text-amber-400' }
+  }
+  if (diffDays <= 7) {
+    return { label: `${diffDays}d`, color: 'text-blue-600', darkColor: 'dark:text-blue-400' }
+  }
+  return { label: `${diffDays}d`, color: 'text-surface-500', darkColor: 'dark:text-surface-400' }
+}
+
 interface TaskCardProps {
   task: Task
   onClick: (task: Task) => void
@@ -40,6 +66,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
   const priority = priorityConfig[task.priority]
+  const dueInfo = task.due_date ? getDueDateInfo(task.due_date) : null
 
   return (
     <div className="group relative">
@@ -73,18 +100,16 @@ export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
             )}
           </div>
 
-          {task.due_date && (
-            <span className="text-xs text-surface-500 dark:text-surface-400 whitespace-nowrap flex-shrink-0">
-              {new Date(task.due_date).toLocaleDateString('es-AR', {
-                day: 'numeric',
-                month: 'short',
-              })}
+          {dueInfo && (
+            <span className={`flex items-center gap-1 text-xs font-medium whitespace-nowrap flex-shrink-0 ${dueInfo.color} ${dueInfo.darkColor}`}>
+              <Clock size={12} />
+              <span>{dueInfo.label}</span>
             </span>
           )}
         </div>
       </button>
 
-      <div className="absolute right-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className={`absolute right-2 top-2 flex gap-1 transition-opacity ${onEdit || onDelete ? 'sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 opacity-100' : ''}`}>
         {onEdit && (
           <button
             type="button"
