@@ -53,6 +53,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const previewAvatar = avatarUrl.trim() || profile.avatar_url || fallbackAvatar
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [passwordStep, setPasswordStep] = useState<'send' | 'verify' | 'reset'>('send')
+  const [resetOtp, setResetOtp] = useState(['', '', '', '', '', ''])
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetToken, setResetToken] = useState('')
+  const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
     if (!open) return
@@ -153,13 +159,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     updateProfile({ avatar_url: null })
     setMessage('Foto de perfil eliminada. Se mostrará un avatar por defecto.')
   }
-
-  const [passwordStep, setPasswordStep] = useState<'send' | 'verify' | 'reset'>('send')
-  const [resetOtp, setResetOtp] = useState(['', '', '', '', '', ''])
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [resetToken, setResetToken] = useState('')
-  const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
 
   const handleSendResetCode = async () => {
     if (!user?.email) return
