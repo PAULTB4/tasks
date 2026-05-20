@@ -4,7 +4,7 @@ import { useTasks } from '../../hooks/useTasks'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TaskDetailModal } from '../tasks/TaskDetailModal'
 import type { Priority } from '../../types'
-import { Pencil, Trash2, Clock } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { WarningDialog } from '../warnings/WarningDialog'
 
 const priorityLabels: Record<Priority, { label: string; color: string }> = {
