@@ -385,9 +385,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     Cambio de correo queda preparado para una próxima iteración cuando definamos flujo de verificación.
                   </p>
                 </div>
-                <div className="rounded-3xl border border-surface-200 bg-surface-50 p-5 text-sm text-surface-500 dark:border-surface-800 dark:bg-surface-950">
-                  ID de usuario: <span className="font-mono text-surface-700 dark:text-surface-300">{user?.id}</span>
-                </div>
               </div>
             )}
           </main>
