@@ -126,11 +126,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       return
     }
 
-    const newUrl = data.url
+    const newUrl = data!.url
     setAvatarUrl(newUrl)
 
     // Auto-save immediately so sidebar updates without reload
-    const { data: profileData, error: profileError } = await insforge.auth.setProfile({
+    const { error: profileError } = await insforge.auth.setProfile({
       avatar_url: newUrl,
     })
 
@@ -147,7 +147,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const handleRemoveAvatar = async () => {
     setAvatarUrl('')
 
-    const { data, error } = await insforge.auth.setProfile({
+    const { error } = await insforge.auth.setProfile({
       avatar_url: null,
     })
 
@@ -221,7 +221,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       return
     }
 
-    setResetToken(data.token)
+    setResetToken(data!.token)
     setPasswordStep('reset')
     setNewPassword('')
     setConfirmPassword('')
