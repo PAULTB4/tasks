@@ -4,6 +4,8 @@ import { useTasks } from '../../hooks/useTasks'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TaskDetailModal } from '../tasks/TaskDetailModal'
 import type { Priority } from '../../types'
+import { Pencil, Trash2 } from 'lucide-react'
+import { WarningDialog } from '../warnings/WarningDialog'
 
 const priorityLabels: Record<Priority, { label: string; color: string }> = {
   low: { label: 'Baja', color: 'bg-slate-100 text-slate-600' },
@@ -20,6 +22,8 @@ export function ListView({ categoryId }: ListViewProps) {
   const { data: tasks, isLoading, createTask, updateTask, deleteTask } = useTasks(categoryId)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all')
 
   const filteredTasks = tasks?.filter((task) => {
@@ -87,26 +91,57 @@ export function ListView({ categoryId }: ListViewProps) {
             {filteredTasks?.map((task) => {
               const priority = priorityLabels[task.priority]
               return (
-                <button
+                <div
                   key={task.id}
-                  onClick={() => setSelectedTask(task)}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors flex items-center gap-4"
+                  className="group flex items-center gap-2 px-4 py-3 transition-colors hover:bg-surface-50 dark:hover:bg-surface-900"
                 >
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{task.title}</h4>
-                    {task.description && (
-                      <p className="text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
-                    )}
-                  </div>
-                  <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.color}`}>
-                    {priority.label}
-                  </span>
-                  {task.due_date && (
-                    <span className="text-[10px] text-surface-400 flex-shrink-0">
-                      {new Date(task.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTask(false)
+                      setSelectedTask(task)
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{task.title}</h4>
+                      {task.description && (
+                        <p className="text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
+                      )}
+                    </div>
+                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.color}`}>
+                      {priority.label}
                     </span>
-                  )}
-                </button>
+                    {task.due_date && (
+                      <span className="text-[10px] text-surface-400 flex-shrink-0">
+                        {new Date(task.due_date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                      </span>
+                    )}
+                  </button>
+                  <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingTask(true)
+                        setSelectedTask(task)
+                      }}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-surface-400 hover:bg-surface-100 hover:text-brand-600 dark:hover:bg-surface-800 dark:hover:text-brand-300"
+                      aria-label="Editar tarea"
+                      title="Editar"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTaskToDelete(task)}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-surface-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-300"
+                      aria-label="Eliminar tarea"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
@@ -125,10 +160,31 @@ export function ListView({ categoryId }: ListViewProps) {
         <TaskDetailModal
           task={selectedTask}
           open={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          defaultEditing={editingTask}
+          onClose={() => {
+            setSelectedTask(null)
+            setEditingTask(false)
+          }}
           onUpdate={(data) => updateTask.mutate(data)}
-          onDelete={(id) => deleteTask.mutate(id)}
           isUpdating={updateTask.isPending}
+        />
+      )}
+
+      {taskToDelete && (
+        <WarningDialog
+          open={!!taskToDelete}
+          title="Eliminar tarea"
+          heading={`¿Eliminar “${taskToDelete.title}”?`}
+          message="La tarea se eliminará de esta lista."
+          confirmLabel="Eliminar"
+          pendingLabel="Eliminando..."
+          isPending={deleteTask.isPending}
+          onClose={() => setTaskToDelete(null)}
+          onConfirm={() => {
+            deleteTask.mutate(taskToDelete.id, {
+              onSuccess: () => setTaskToDelete(null),
+            })
+          }}
         />
       )}
     </div>
