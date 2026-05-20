@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCategories, useTrashCategories } from '../../hooks/useCategories'
-import { useTasks } from '../../hooks/useTasks'
+import { usePendingTaskCounts, useTasks } from '../../hooks/useTasks'
 import { CreateCategoryDialog } from './CreateCategoryDialog'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TrashDialog } from './TrashDialog'
@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 
+const EXPANDED_CATEGORIES_STORAGE_KEY = 'taskforge:expanded-categories'
+
 function CategoryNode({
   category,
   children,
@@ -24,6 +26,9 @@ function CategoryNode({
   onCreateSub,
   onCreateTask,
   onDelete,
+  pendingTaskCounts,
+  expandedCategoryIds,
+  onToggleExpanded,
   level = 0,
 }: {
   category: Category
@@ -34,10 +39,16 @@ function CategoryNode({
   onCreateSub: (parentId: string) => void
   onCreateTask: (categoryId: string) => void
   onDelete: (id: string) => void
+  pendingTaskCounts: Record<string, number>
+  expandedCategoryIds: string[] | null
+  onToggleExpanded: (categoryId: string, isExpanded: boolean) => void
   level: number
 }) {
   const isFolder = category.type === 'folder'
-  const [expanded, setExpanded] = useState(isFolder)
+  const pendingTaskCount = pendingTaskCounts[category.id] ?? 0
+  const expanded = expandedCategoryIds
+    ? expandedCategoryIds.includes(category.id)
+    : isFolder
   const indent = 8 + level * 14
   const connectorLeft = 18 + (level - 1) * 14
 
@@ -66,7 +77,7 @@ function CategoryNode({
         style={{ paddingLeft: `${indent}px` }}
       >
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => onToggleExpanded(category.id, expanded)}
           disabled={!isFolder || children.length === 0}
           className={`inline-flex h-8 w-6 items-center justify-center rounded-md hover:bg-surface-200 dark:hover:bg-surface-700 ${
             !isFolder || children.length === 0 ? 'opacity-0 cursor-default' : ''
@@ -83,7 +94,7 @@ function CategoryNode({
 
         <button
           onClick={() => onSelect(category.id)}
-          className="min-w-0 flex items-center gap-2 py-2 rounded-lg text-left"
+          className="min-w-0 flex w-full items-center gap-2 py-2 rounded-lg text-left"
         >
           {isFolder ? (
             <Folder size={14} className="flex-shrink-0 text-amber-500" />
@@ -99,6 +110,11 @@ function CategoryNode({
           >
             {category.name}
           </span>
+          {!isFolder && pendingTaskCount > 0 && (
+            <span className="ml-auto rounded-full bg-surface-200 px-1.5 py-0.5 text-[10px] font-bold leading-none text-surface-500 dark:bg-surface-800 dark:text-surface-400">
+              {pendingTaskCount}
+            </span>
+          )}
         </button>
 
         <div className="pr-1 sm:pr-2 flex items-center gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
@@ -145,6 +161,9 @@ function CategoryNode({
               onCreateSub={onCreateSub}
               onCreateTask={onCreateTask}
               onDelete={onDelete}
+              pendingTaskCounts={pendingTaskCounts}
+              expandedCategoryIds={expandedCategoryIds}
+              onToggleExpanded={onToggleExpanded}
               level={level + 1}
             />
           ))}
@@ -168,6 +187,15 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   } = useCategories()
   const { data: deletedCategories } = useTrashCategories()
   const { createTask } = useTasks()
+  const { data: pendingTaskCounts } = usePendingTaskCounts()
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[] | null>(() => {
+    try {
+      const savedIds = window.localStorage.getItem(EXPANDED_CATEGORIES_STORAGE_KEY)
+      return savedIds ? JSON.parse(savedIds) as string[] : null
+    } catch {
+      return null
+    }
+  })
   const [dialogOpen, setDialogOpen] = useState(false)
   const [subcategoryParentId, setSubcategoryParentId] = useState<string | null>(
     null,
@@ -184,6 +212,30 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   ).length
   const getChildren = (parentId: string) =>
     categories?.filter((c) => c.parent_id === parentId) ?? []
+
+  useEffect(() => {
+    if (!expandedCategoryIds) return
+    window.localStorage.setItem(
+      EXPANDED_CATEGORIES_STORAGE_KEY,
+      JSON.stringify(expandedCategoryIds),
+    )
+  }, [expandedCategoryIds])
+
+  const handleToggleExpanded = (categoryId: string, isExpanded: boolean) => {
+    setExpandedCategoryIds((current) => {
+      const currentExpandedIds = current ?? (
+        categories
+          ?.filter((category) => category.type === 'folder')
+          .map((category) => category.id) ?? []
+      )
+
+      if (isExpanded) {
+        return currentExpandedIds.filter((id) => id !== categoryId)
+      }
+
+      return [...new Set([...currentExpandedIds, categoryId])]
+    })
+  }
 
   const getDescendantIds = (categoryId: string): string[] => {
     const directChildren = getChildren(categoryId)
@@ -242,19 +294,20 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
 
   return (
     <div className="flex h-full min-w-0 flex-col py-2">
-      <header className="flex items-center justify-between px-4 mb-2 mt-2">
-        <h2 className="sr-only">
+      <header className="mx-3 mb-3 mt-2 flex items-center justify-between gap-3 border-b border-surface-200/80 px-1 pb-3 dark:border-surface-800/80">
+        <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-surface-400 dark:text-surface-500">
           Carpetas y listas
         </h2>
         <Button
-          variant="ghost"
+          variant="default"
           size="default"
           onClick={() => handleOpenRootDialog('folder')}
-          className="h-9 w-9 p-0 rounded-xl"
-          aria-label="Nueva carpeta"
-          title="Nueva carpeta"
+          className="h-10 gap-2 rounded-xl px-3 shadow-sm"
+          aria-label="Crear carpeta o lista"
+          title="Crear carpeta o lista"
         >
-          <Plus size={20} />
+          <Plus size={18} strokeWidth={2.6} />
+          <span className="text-sm">Crear</span>
         </Button>
       </header>
 
@@ -295,23 +348,26 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
               onCreateSub={handleCreateSub}
               onCreateTask={handleCreateTask}
               onDelete={handleDelete}
+              pendingTaskCounts={pendingTaskCounts ?? {}}
+              expandedCategoryIds={expandedCategoryIds}
+              onToggleExpanded={handleToggleExpanded}
               level={0}
             />
           ))
         )}
       </div>
 
-      <div className="mt-2 border-t border-surface-200 px-2 pt-2 dark:border-surface-800">
+      <div className="mt-2 px-2 pt-1">
         <button
           type="button"
           onClick={() => setTrashOpen(true)}
-          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100"
+          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-500 dark:hover:bg-surface-800 dark:hover:text-surface-200"
           title="Papelera"
         >
-          <Trash2 size={16} className="text-surface-400" />
+          <Trash2 size={14} className="text-surface-400 dark:text-surface-500" />
           <span>Papelera</span>
           {trashRootCount > 0 && (
-            <span className="ml-auto rounded-full bg-surface-200 px-2 py-0.5 text-[10px] font-bold text-surface-500 dark:bg-surface-800">
+            <span className="ml-auto rounded-full bg-surface-100 px-1.5 py-0.5 text-[10px] font-semibold text-surface-400 dark:bg-surface-800 dark:text-surface-500">
               {trashRootCount}
             </span>
           )}

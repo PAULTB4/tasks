@@ -20,12 +20,6 @@ export function Sidebar({ selectedCategoryId, onSelectCategory }: SidebarProps) 
   return (
     <>
       <aside className="w-[min(20rem,86vw)] sm:w-80 lg:w-72 shrink-0 bg-surface-50 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-800 flex flex-col h-full">
-        <header className="px-4 sm:px-6 py-4 sm:py-5 border-b border-surface-200 dark:border-surface-800">
-          <h1 className="text-xl font-bold text-brand-700 dark:text-brand-500 tracking-tight">
-            TaskForge
-          </h1>
-        </header>
-
         <div className="flex-1 overflow-y-auto">
           <CategoryTree
             selectedId={selectedCategoryId}

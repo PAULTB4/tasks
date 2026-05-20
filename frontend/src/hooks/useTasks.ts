@@ -4,6 +4,8 @@ import { insforge } from '../lib/insforge'
 import { useAuthStore } from './useAuthStore'
 import type { Task, Priority } from '../types'
 
+type TaskCountRow = Pick<Task, 'category_id' | 'status_id'>
+
 interface CreateTaskInput {
   title: string
   category_id: string
@@ -35,6 +37,7 @@ export function useTasks(categoryId?: string) {
     const handleTaskCreated = (payload: { task?: Task }) => {
       if (!payload.task || payload.task.category_id !== categoryId) return
 
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) => {
         if (current.some((task) => task.id === payload.task!.id)) return current
         return [payload.task!, ...current]
@@ -43,6 +46,7 @@ export function useTasks(categoryId?: string) {
 
     const handleTaskUpdated = (payload: { task?: Task }) => {
       if (!payload.task || payload.task.category_id !== categoryId) return
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.map((task) => task.id === payload.task!.id ? payload.task! : task),
       )
@@ -50,6 +54,7 @@ export function useTasks(categoryId?: string) {
 
     const handleTaskDeleted = (payload: { taskId?: string }) => {
       if (!payload.taskId) return
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.filter((task) => task.id !== payload.taskId),
       )
@@ -116,6 +121,7 @@ export function useTasks(categoryId?: string) {
       return data as Task
     },
     onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) => {
         if (current.some((item) => item.id === task.id)) return current
         return [task, ...current]
@@ -153,6 +159,7 @@ export function useTasks(categoryId?: string) {
       }
     },
     onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.map((item) => item.id === task.id ? task : item),
       )
@@ -185,9 +192,43 @@ export function useTasks(categoryId?: string) {
       }
     },
     onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       publishTaskEvent('task_deleted', { taskId: id })
     },
   })
 
   return { ...query, createTask, updateTask, deleteTask }
+}
+
+export function usePendingTaskCounts() {
+  const userId = useAuthStore((s) => s.user?.id)
+
+  return useQuery({
+    queryKey: ['pending-task-counts'],
+    queryFn: async () => {
+      const [tasksResult, statusesResult] = await Promise.all([
+        insforge.database.from('tasks').select('category_id,status_id'),
+        insforge.database.from('task_statuses').select('id,name'),
+      ])
+
+      if (tasksResult.error) throw tasksResult.error
+      if (statusesResult.error) throw statusesResult.error
+
+      const completedStatusIds = new Set(
+        (statusesResult.data ?? [])
+          .filter((status) => status.name?.trim().toLocaleLowerCase() === 'completado')
+          .map((status) => status.id),
+      )
+
+      return ((tasksResult.data ?? []) as TaskCountRow[]).reduce<Record<string, number>>(
+        (counts, task) => {
+          if (completedStatusIds.has(task.status_id)) return counts
+          counts[task.category_id] = (counts[task.category_id] ?? 0) + 1
+          return counts
+        },
+        {},
+      )
+    },
+    enabled: !!userId,
+  })
 }
