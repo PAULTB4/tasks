@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Camera, KeyRound, Mail, Shield, User, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Camera, KeyRound, Mail, Shield, Upload, User, X } from 'lucide-react'
 import { insforge } from '../../lib/insforge'
 import { useAuthStore } from '../../hooks/useAuthStore'
 import { Button } from '../ui/Button'
@@ -51,6 +51,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const profile = user?.profile ?? {}
   const fallbackAvatar = `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email ?? 'taskforge'}`
   const previewAvatar = avatarUrl.trim() || profile.avatar_url || fallbackAvatar
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -83,6 +85,44 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
     updateProfile(data ?? { name: name.trim(), avatar_url: avatarUrl.trim() })
     setMessage('Perfil actualizado.')
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Solo se permiten archivos de imagen.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('La imagen no debe superar los 5 MB.')
+      return
+    }
+
+    setUploading(true)
+    setError(null)
+
+    const { data, error } = await insforge.storage
+      .from('avatars')
+      .uploadAuto(file)
+
+    setUploading(false)
+
+    if (error) {
+      setError(error.message || 'No se pudo subir la imagen.')
+      return
+    }
+
+    setAvatarUrl(data.url)
+    setMessage('Imagen subida correctamente.')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl('')
+    setMessage('Foto de perfil eliminada. Se mostrará un avatar por defecto.')
   }
 
   const handleSendPasswordReset = async () => {
@@ -208,23 +248,57 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               <form onSubmit={handleSaveProfile} className="space-y-6">
                 <div className="rounded-3xl border border-surface-200 bg-surface-50 p-5 dark:border-surface-800 dark:bg-surface-950">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <img
-                      src={previewAvatar}
-                      alt="Foto de perfil"
-                      className="h-24 w-24 rounded-3xl border border-surface-200 bg-surface-200 object-cover dark:border-surface-700"
-                    />
+                    <div className="relative group">
+                      <img
+                        src={previewAvatar}
+                        alt="Foto de perfil"
+                        className="h-24 w-24 rounded-3xl border border-surface-200 bg-surface-200 object-cover dark:border-surface-700"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="absolute inset-0 flex items-center justify-center rounded-3xl bg-black/40 opacity-0 transition-opacity hover:bg-black/50 group-hover:opacity-100 disabled:cursor-not-allowed"
+                        title="Cambiar foto"
+                      >
+                        <Upload size={20} className="text-white" />
+                      </button>
+                    </div>
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-surface-800 dark:text-surface-100">
                         <Camera size={16} />
                         Foto de perfil
                       </div>
                       <p className="mb-3 text-sm text-surface-500">
-                        Por ahora usá una URL de imagen. Más adelante podemos sumar upload real con Storage.
+                        Hacé clic en la foto para subir una imagen desde tu dispositivo.
                       </p>
-                      <Input
-                        value={avatarUrl}
-                        onChange={(event) => setAvatarUrl(event.target.value)}
-                        placeholder="https://.../avatar.png"
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                        >
+                          {uploading ? 'Subiendo...' : 'Subir imagen'}
+                        </Button>
+                        {(avatarUrl.trim() || profile.avatar_url) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleRemoveAvatar}
+                          >
+                            Quitar
+                          </Button>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
                       />
                     </div>
                   </div>
