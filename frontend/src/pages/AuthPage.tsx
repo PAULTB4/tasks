@@ -126,17 +126,17 @@ export function AuthPage() {
 
   if (needsVerification) {
     return (
-      <div className="min-h-screen bg-surface-50 dark:bg-surface-100 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
             <p className="text-surface-500 mt-2">Verifica tu email</p>
           </div>
 
-          <div className="bg-white dark:bg-surface-200 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-300 p-8">
+          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
             <div className="text-center mb-6">
               <div className="w-12 h-12 bg-brand-100 dark:bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-brand-600 dark:text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-6 h-6 text-brand-600 dark:text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
@@ -158,7 +158,7 @@ export function AuthPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="w-12 h-14 text-center text-xl font-bold border border-surface-300 dark:border-surface-400 bg-white dark:bg-surface-100 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    className="w-12 h-14 text-center text-xl font-bold border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                 ))}
               </div>
@@ -216,7 +216,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
@@ -225,13 +225,13 @@ export function AuthPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-surface-200 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-300 p-8">
-          <div className="flex mb-6 bg-surface-100 dark:bg-surface-300 rounded-lg p-1">
+        <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
+          <div className="flex mb-6 bg-surface-100 dark:bg-surface-800 rounded-lg p-1">
             <button
               type="button"
               onClick={() => { setIsLogin(true); setError('') }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                isLogin ? 'bg-white dark:bg-surface-200 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500'
+                isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400'
               }`}
             >
               Iniciar sesion
@@ -240,7 +240,7 @@ export function AuthPage() {
               type="button"
               onClick={() => { setIsLogin(false); setError('') }}
               className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                !isLogin ? 'bg-white dark:bg-surface-200 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500'
+                !isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400'
               }`}
             >
               Registrarse
@@ -259,7 +259,7 @@ export function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="tu@email.com"
-                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-400 bg-white dark:bg-surface-100 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
+                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
               />
             </div>
 
@@ -275,7 +275,7 @@ export function AuthPage() {
                 required
                 minLength={6}
                 placeholder="Minimo 6 caracteres"
-                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-400 bg-white dark:bg-surface-100 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
+                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
               />
             </div>
 

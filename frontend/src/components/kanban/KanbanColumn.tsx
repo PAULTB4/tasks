@@ -12,9 +12,13 @@ import { Plus } from 'lucide-react'
 function SortableTaskCard({
   task,
   onClick,
+  onEdit,
+  onDelete,
 }: {
   task: Task
   onClick: (task: Task) => void
+  onEdit: (task: Task) => void
+  onDelete: (task: Task) => void
 }) {
   const {
     attributes,
@@ -36,7 +40,7 @@ function SortableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} onClick={onClick} />
+      <TaskCard task={task} onClick={onClick} onEdit={onEdit} onDelete={onDelete} />
     </div>
   )
 }
@@ -45,6 +49,8 @@ interface KanbanColumnProps {
   status: TaskStatus
   tasks: Task[]
   onTaskClick: (task: Task) => void
+  onTaskEdit: (task: Task) => void
+  onTaskDelete: (task: Task) => void
   onCreateTask: () => void
 }
 
@@ -52,6 +58,8 @@ export function KanbanColumn({
   status,
   tasks,
   onTaskClick,
+  onTaskEdit,
+  onTaskDelete,
   onCreateTask,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
@@ -64,7 +72,7 @@ export function KanbanColumn({
       className={`flex-shrink-0 w-80 flex flex-col rounded-xl transition-colors ${
         isOver
           ? 'bg-brand-50/50 dark:bg-brand-900/20'
-          : 'bg-surface-100 dark:bg-surface-800'
+          : 'bg-surface-100 dark:bg-surface-900'
       }`}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b-2 border-surface-200 dark:border-surface-700">
@@ -98,7 +106,13 @@ export function KanbanColumn({
           strategy={verticalListSortingStrategy}
         >
           {tasks.map((task) => (
-            <SortableTaskCard key={task.id} task={task} onClick={onTaskClick} />
+            <SortableTaskCard
+              key={task.id}
+              task={task}
+              onClick={onTaskClick}
+              onEdit={onTaskEdit}
+              onDelete={onTaskDelete}
+            />
           ))}
         </SortableContext>
         {tasks.length === 0 && !isOver && (

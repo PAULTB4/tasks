@@ -5,6 +5,7 @@ import { useAuthStore } from '../../hooks/useAuthStore'
 import { LogOut, Settings } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { SettingsDialog } from '../settings/SettingsDialog'
+import { WarningDialog } from '../warnings/WarningDialog'
 
 interface SidebarProps {
   selectedCategoryId: string | null
@@ -14,6 +15,7 @@ interface SidebarProps {
 export function Sidebar({ selectedCategoryId, onSelectCategory }: SidebarProps) {
   const { user, signOut } = useAuthStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [logoutOpen, setLogoutOpen] = useState(false)
   const avatarUrl = user?.profile?.avatar_url || `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email}`
   const displayName = user?.profile?.name || user?.email
 
@@ -46,13 +48,27 @@ export function Sidebar({ selectedCategoryId, onSelectCategory }: SidebarProps) 
             <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)} title="Ajustes">
               <Settings size={18} />
             </Button>
-            <Button variant="ghost" size="sm" onClick={signOut} title="Cerrar sesión">
+            <Button variant="ghost" size="sm" onClick={() => setLogoutOpen(true)} title="Cerrar sesión">
               <LogOut size={18} />
             </Button>
           </div>
         </footer>
       </aside>
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <WarningDialog
+        open={logoutOpen}
+        title="Cerrar sesión"
+        heading="¿Cerrar tu sesión?"
+        message="Vas a salir de tu cuenta en este dispositivo."
+        confirmLabel="Cerrar sesión"
+        pendingLabel="Cerrando..."
+        confirmVariant="default"
+        onClose={() => setLogoutOpen(false)}
+        onConfirm={() => {
+          setLogoutOpen(false)
+          signOut()
+        }}
+      />
     </>
   )
 }

@@ -16,9 +16,9 @@ export function CategoryView() {
 
   if (!categoryId) {
     return (
-      <div className="flex items-center justify-center h-full text-surface-400 dark:text-surface-600">
+      <div className="flex items-center justify-center h-full text-surface-400 dark:text-surface-500">
         <div className="text-center p-8 border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-2xl">
-          <Folder size={48} className="mx-auto text-surface-300 dark:text-surface-700" />
+          <Folder size={48} className="mx-auto text-surface-300 dark:text-surface-600" />
           <p className="mt-4 text-lg font-medium text-surface-600 dark:text-surface-400">
             Seleccioná una carpeta o lista
           </p>

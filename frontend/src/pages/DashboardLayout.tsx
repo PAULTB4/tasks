@@ -6,7 +6,7 @@ export function DashboardLayout() {
   const { categoryId } = useParams()
 
   return (
-    <div className="h-screen flex bg-surface-50 dark:bg-surface-100">
+    <div className="h-screen flex bg-surface-50 dark:bg-surface-950">
       <Sidebar
         selectedCategoryId={categoryId || null}
         onSelectCategory={(id) => navigate(`/dashboard/category/${id}`)}

@@ -5,14 +5,14 @@ import { useTaskNotes } from '../../hooks/useTaskNotes'
 interface TaskDetailModalProps {
   task: Task
   open: boolean
+  defaultEditing?: boolean
   onClose: () => void
   onUpdate: (data: { id: string; title?: string; description?: string | null; priority?: Priority; due_date?: string | null }) => void
-  onDelete: (id: string) => void
   isUpdating: boolean
 }
 
-export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpdating }: TaskDetailModalProps) {
-  const [isEditing, setIsEditing] = useState(false)
+export function TaskDetailModal({ task, open, defaultEditing = false, onClose, onUpdate, isUpdating }: TaskDetailModalProps) {
+  const [isEditing, setIsEditing] = useState(defaultEditing)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [priority, setPriority] = useState<Priority>(task.priority)
@@ -61,18 +61,18 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30 dark:bg-black/60" onClick={onClose} />
-      <div className="relative bg-white dark:bg-surface-200 rounded-xl shadow-xl border border-surface-200 dark:border-surface-300 w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100">
+      <div className="relative bg-white dark:bg-surface-900 rounded-xl shadow-xl border border-surface-200 dark:border-surface-800 w-full max-w-2xl mx-4 max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-100 dark:border-surface-800">
           {isEditing ? (
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="flex-1 text-lg font-semibold text-surface-900 border-b border-surface-300 focus:outline-none focus:border-brand-500 px-1"
+              className="flex-1 bg-transparent text-lg font-semibold text-surface-900 dark:text-surface-100 border-b border-surface-300 dark:border-surface-700 focus:outline-none focus:border-brand-500 px-1"
               autoFocus
             />
           ) : (
-            <h3 className="text-lg font-semibold text-surface-900">{task.title}</h3>
+            <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">{task.title}</h3>
           )}
           <div className="flex items-center gap-2">
             {isEditing ? (
@@ -80,28 +80,16 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
                 <button onClick={handleSave} disabled={isUpdating || !title.trim()} className="px-3 py-1.5 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50">
                   Guardar
                 </button>
-                <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-surface-500 hover:text-surface-700">
+                  <button onClick={handleCancelEdit} className="px-3 py-1.5 text-sm text-surface-500 hover:text-surface-700 dark:hover:text-surface-300">
                   Cancelar
                 </button>
               </>
             ) : (
-              <>
-                <button onClick={() => setIsEditing(true)} className="text-surface-400 hover:text-brand-600 transition-colors" title="Editar">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button onClick={() => { onDelete(task.id); onClose() }} className="text-surface-400 hover:text-red-500 transition-colors" title="Eliminar">
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-                <button onClick={onClose} className="text-surface-400 hover:text-surface-600 transition-colors ml-1" title="Cerrar">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </>
+              <button onClick={onClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors ml-1" title="Cerrar">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             )}
           </div>
         </div>
@@ -110,21 +98,21 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
           {isEditing ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-surface-700 mb-1">Descripcion</label>
+                <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Descripcion</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-surface-700 mb-1">Prioridad</label>
+                  <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Prioridad</label>
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value as Priority)}
-                    className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   >
                     <option value="low">Baja</option>
                     <option value="medium">Media</option>
@@ -133,12 +121,12 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-surface-700 mb-1">Fecha limite</label>
+                  <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-1">Fecha limite</label>
                   <input
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -148,18 +136,18 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
               {task.description && (
                 <div>
                   <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-2">Descripcion</h4>
-                  <p className="text-sm text-surface-700 whitespace-pre-wrap">{task.description}</p>
+                  <p className="text-sm text-surface-700 dark:text-surface-300 whitespace-pre-wrap">{task.description}</p>
                 </div>
               )}
               <div className="flex gap-4">
                 <div>
                   <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Prioridad</h4>
-                  <span className="text-sm text-surface-700">{priorityLabels[task.priority]}</span>
+                  <span className="text-sm text-surface-700 dark:text-surface-300">{priorityLabels[task.priority]}</span>
                 </div>
                 {task.due_date && (
                   <div>
                     <h4 className="text-xs font-semibold text-surface-400 uppercase tracking-wider mb-1">Fecha limite</h4>
-                    <span className="text-sm text-surface-700">
+                    <span className="text-sm text-surface-700 dark:text-surface-300">
                       {new Date(task.due_date).toLocaleDateString('es-AR', {
                         day: 'numeric',
                         month: 'long',
@@ -172,8 +160,8 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
             </div>
           )}
 
-          <div className="border-t border-surface-100 pt-6">
-            <h4 className="text-sm font-semibold text-surface-700 mb-3">Notas</h4>
+          <div className="border-t border-surface-100 dark:border-surface-800 pt-6">
+            <h4 className="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-3">Notas</h4>
 
             <form onSubmit={handleAddNote} className="flex gap-2 mb-4">
               <input
@@ -181,7 +169,7 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
                 value={newNote}
                 onChange={(e) => setNewNote(e.target.value)}
                 placeholder="Agregar una nota..."
-                className="flex-1 px-3 py-2 border border-surface-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
               <button
                 type="submit"
@@ -199,8 +187,8 @@ export function TaskDetailModal({ task, open, onClose, onUpdate, onDelete, isUpd
                 </p>
               )}
               {notes?.map((note) => (
-                <div key={note.id} className="flex items-start gap-3 p-3 bg-surface-50 dark:bg-surface-100 rounded-lg group">
-                  <p className="flex-1 text-sm text-surface-700 whitespace-pre-wrap">{note.content}</p>
+                <div key={note.id} className="flex items-start gap-3 p-3 bg-surface-50 dark:bg-surface-950 rounded-lg group">
+                  <p className="flex-1 text-sm text-surface-700 dark:text-surface-300 whitespace-pre-wrap">{note.content}</p>
                   <button
                     onClick={() => deleteNote.mutate(note.id)}
                     className="opacity-0 group-hover:opacity-100 text-surface-400 hover:text-red-500 transition-all flex-shrink-0 mt-0.5"

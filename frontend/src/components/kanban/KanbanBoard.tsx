@@ -16,6 +16,7 @@ import { KanbanColumn } from './KanbanColumn'
 import { TaskCard } from '../tasks/TaskCard'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TaskDetailModal } from '../tasks/TaskDetailModal'
+import { WarningDialog } from '../warnings/WarningDialog'
 
 interface KanbanBoardProps {
   categoryId: string
@@ -28,6 +29,8 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [defaultStatusId, setDefaultStatusId] = useState<string | undefined>()
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [editingTask, setEditingTask] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -61,6 +64,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
     description: string
     priority: Priority
     status_id: string
+    due_date: string | null
   }) => {
     createTask.mutate(
       {
@@ -68,6 +72,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         description: data.description,
         priority: data.priority,
         status_id: data.status_id,
+        due_date: data.due_date,
         category_id: categoryId,
       },
       {
@@ -101,7 +106,15 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
               key={status.id}
               status={status}
               tasks={getTasksByStatus(status.id)}
-              onTaskClick={setSelectedTask}
+              onTaskClick={(task) => {
+                setEditingTask(false)
+                setSelectedTask(task)
+              }}
+              onTaskEdit={(task) => {
+                setEditingTask(true)
+                setSelectedTask(task)
+              }}
+              onTaskDelete={setTaskToDelete}
               onCreateTask={() => {
                 setDefaultStatusId(status.id)
                 setCreateDialogOpen(true)
@@ -132,10 +145,31 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         <TaskDetailModal
           task={selectedTask}
           open={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
+          defaultEditing={editingTask}
+          onClose={() => {
+            setSelectedTask(null)
+            setEditingTask(false)
+          }}
           onUpdate={(data) => updateTask.mutate(data)}
-          onDelete={(id) => deleteTask.mutate(id)}
           isUpdating={updateTask.isPending}
+        />
+      )}
+
+      {taskToDelete && (
+        <WarningDialog
+          open={!!taskToDelete}
+          title="Eliminar tarea"
+          heading={`¿Eliminar “${taskToDelete.title}”?`}
+          message="La tarea se eliminará de esta lista."
+          confirmLabel="Eliminar"
+          pendingLabel="Eliminando..."
+          isPending={deleteTask.isPending}
+          onClose={() => setTaskToDelete(null)}
+          onConfirm={() => {
+            deleteTask.mutate(taskToDelete.id, {
+              onSuccess: () => setTaskToDelete(null),
+            })
+          }}
         />
       )}
     </>
