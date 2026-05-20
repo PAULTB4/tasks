@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Task, Priority } from '../../types'
 import { useTaskNotes } from '../../hooks/useTaskNotes'
 
@@ -19,6 +19,16 @@ export function TaskDetailModal({ task, open, defaultEditing = false, onClose, o
   const [dueDate, setDueDate] = useState(task.due_date?.split('T')[0] || '')
   const [newNote, setNewNote] = useState('')
 
+  // Reset internal state when task changes
+  useEffect(() => {
+    setTitle(task.title)
+    setDescription(task.description || '')
+    setPriority(task.priority)
+    setDueDate(task.due_date?.split('T')[0] || '')
+    setIsEditing(defaultEditing)
+    setNewNote('')
+  }, [task.id, defaultEditing])
+
   const { data: notes, createNote, deleteNote } = useTaskNotes(task.id)
 
   if (!open) return null
@@ -31,7 +41,7 @@ export function TaskDetailModal({ task, open, defaultEditing = false, onClose, o
       priority,
       due_date: dueDate || null,
     })
-    setIsEditing(false)
+    onClose()
   }
 
   const handleCancelEdit = () => {
