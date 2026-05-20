@@ -42,7 +42,7 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
   return (
     <button
       onClick={() => onClick(task)}
-      className="w-full text-left bg-white dark:bg-surface-700 rounded-xl border border-surface-200 dark:border-surface-600 p-4 shadow-sm hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-500 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
+      className="w-full text-left bg-white dark:bg-surface-900 rounded-xl border border-surface-200 dark:border-surface-800 p-4 shadow-sm hover:shadow-lg hover:border-brand-300 dark:hover:border-brand-500 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
     >
       <h4 className="font-semibold text-surface-800 dark:text-surface-100 line-clamp-2 leading-snug">
         {task.title}

@@ -19,6 +19,7 @@ export default {
           700: 'var(--surface-700)',
           800: 'var(--surface-800)',
           900: 'var(--surface-900)',
+          950: 'var(--surface-950)',
         },
         brand: {
           50: 'var(--brand-50)',

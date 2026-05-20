@@ -61,6 +61,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
     description: string
     priority: Priority
     status_id: string
+    due_date: string | null
   }) => {
     createTask.mutate(
       {
@@ -68,6 +69,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         description: data.description,
         priority: data.priority,
         status_id: data.status_id,
+        due_date: data.due_date,
         category_id: categoryId,
       },
       {

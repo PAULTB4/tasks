@@ -32,6 +32,7 @@ export function ListView({ categoryId }: ListViewProps) {
     description: string
     priority: Priority
     status_id: string
+    due_date: string | null
   }) => {
     createTask.mutate(
       {
@@ -39,6 +40,7 @@ export function ListView({ categoryId }: ListViewProps) {
         description: data.description,
         priority: data.priority,
         status_id: data.status_id,
+        due_date: data.due_date,
         category_id: categoryId,
       },
       { onSuccess: () => setCreateDialogOpen(false) }
@@ -55,11 +57,11 @@ export function ListView({ categoryId }: ListViewProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-4 px-4 py-3 border-b border-surface-100">
+      <div className="flex items-center gap-4 px-4 py-3 border-b border-surface-100 dark:border-surface-800">
         <select
           value={filterPriority}
           onChange={(e) => setFilterPriority(e.target.value as Priority | 'all')}
-          className="text-xs px-2 py-1.5 border border-surface-300 dark:border-surface-400 bg-white dark:bg-surface-100 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="text-xs px-2 py-1.5 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">Todas las prioridades</option>
           <option value="low">Baja</option>
@@ -77,23 +79,23 @@ export function ListView({ categoryId }: ListViewProps) {
 
       <div className="flex-1 overflow-y-auto">
         {filteredTasks?.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-surface-400">
+          <div className="flex items-center justify-center h-full text-surface-400 dark:text-surface-500">
             <p className="text-sm">No hay tareas en esta categoria</p>
           </div>
         ) : (
-          <div className="divide-y divide-surface-100">
+          <div className="divide-y divide-surface-100 dark:divide-surface-800">
             {filteredTasks?.map((task) => {
               const priority = priorityLabels[task.priority]
               return (
                 <button
                   key={task.id}
                   onClick={() => setSelectedTask(task)}
-                  className="w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-200 transition-colors flex items-center gap-4"
+                  className="w-full text-left px-4 py-3 hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors flex items-center gap-4"
                 >
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-surface-900 truncate">{task.title}</h4>
+                    <h4 className="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">{task.title}</h4>
                     {task.description && (
-                      <p className="text-xs text-surface-400 truncate mt-0.5">{task.description}</p>
+                      <p className="text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
                     )}
                   </div>
                   <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.color}`}>

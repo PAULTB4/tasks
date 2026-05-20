@@ -64,7 +64,7 @@ export function KanbanColumn({
       className={`flex-shrink-0 w-80 flex flex-col rounded-xl transition-colors ${
         isOver
           ? 'bg-brand-50/50 dark:bg-brand-900/20'
-          : 'bg-surface-100 dark:bg-surface-800'
+          : 'bg-surface-100 dark:bg-surface-900'
       }`}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b-2 border-surface-200 dark:border-surface-700">

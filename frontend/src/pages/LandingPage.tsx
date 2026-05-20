@@ -5,9 +5,9 @@ export function LandingPage() {
   const { user } = useAuthStore()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-surface-50 dark:from-surface-100 to-brand-50 dark:to-brand-50/20 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-surface-50 dark:from-surface-950 to-brand-50 dark:to-brand-900 flex flex-col">
       <header className="px-6 py-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand-700 dark:text-brand-600">TaskForge</h1>
+        <h1 className="text-xl font-bold text-brand-700 dark:text-brand-300">TaskForge</h1>
         {user ? (
           <Link
             to="/dashboard"
