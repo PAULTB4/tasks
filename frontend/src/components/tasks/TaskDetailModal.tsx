@@ -13,6 +13,7 @@ interface TaskDetailModalProps {
 
 export function TaskDetailModal({ task, open, defaultEditing = false, onClose, onUpdate, isUpdating }: TaskDetailModalProps) {
   const [isEditing, setIsEditing] = useState(defaultEditing)
+  const [wasOpenedEditing, setWasOpenedEditing] = useState(defaultEditing)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [priority, setPriority] = useState<Priority>(task.priority)
@@ -26,6 +27,7 @@ export function TaskDetailModal({ task, open, defaultEditing = false, onClose, o
     setPriority(task.priority)
     setDueDate(task.due_date?.split('T')[0] || '')
     setIsEditing(defaultEditing)
+    setWasOpenedEditing(defaultEditing)
     setNewNote('')
   }, [task.id, defaultEditing])
 
@@ -41,15 +43,23 @@ export function TaskDetailModal({ task, open, defaultEditing = false, onClose, o
       priority,
       due_date: dueDate || null,
     })
-    onClose()
+    if (wasOpenedEditing) {
+      onClose()
+    } else {
+      setIsEditing(false)
+    }
   }
 
   const handleCancelEdit = () => {
-    setTitle(task.title)
-    setDescription(task.description || '')
-    setPriority(task.priority)
-    setDueDate(task.due_date?.split('T')[0] || '')
-    setIsEditing(false)
+    if (wasOpenedEditing) {
+      onClose()
+    } else {
+      setTitle(task.title)
+      setDescription(task.description || '')
+      setPriority(task.priority)
+      setDueDate(task.due_date?.split('T')[0] || '')
+      setIsEditing(false)
+    }
   }
 
   const handleAddNote = (e: React.FormEvent) => {
