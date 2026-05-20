@@ -15,14 +15,7 @@ export function LandingPage() {
           >
             Ir al dashboard
           </Link>
-        ) : (
-          <Link
-            to="/auth"
-            className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium"
-          >
-            Iniciar sesion
-          </Link>
-        )}
+        ) : null}
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { CategoryTree } from '../categories/CategoryTree'
-import { ThemeToggle } from './ThemeToggle'
 import { useAuthStore } from '../../hooks/useAuthStore'
 import { LogOut, Settings } from 'lucide-react'
 import { Button } from '../ui/Button'
@@ -44,7 +43,6 @@ export function Sidebar({ selectedCategoryId, onSelectCategory }: SidebarProps) 
                 <p className="text-xs text-surface-400 truncate">{user?.email}</p>
               )}
             </div>
-            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)} title="Ajustes">
               <Settings size={18} />
             </Button>
