@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Task, Priority } from '../../types'
 import { useTaskNotes } from '../../hooks/useTaskNotes'
 
@@ -11,29 +11,22 @@ interface TaskDetailModalProps {
   isUpdating: boolean
 }
 
-export function TaskDetailModal({ task, open, defaultEditing = false, onClose, onUpdate, isUpdating }: TaskDetailModalProps) {
+export function TaskDetailModal({ task, open, defaultEditing = false, ...props }: TaskDetailModalProps) {
+  if (!open) return null
+
+  return <TaskDetailModalContent key={`${task.id}:${defaultEditing}`} task={task} open={open} defaultEditing={defaultEditing} {...props} />
+}
+
+function TaskDetailModalContent({ task, defaultEditing = false, onClose, onUpdate, isUpdating }: TaskDetailModalProps) {
   const [isEditing, setIsEditing] = useState(defaultEditing)
-  const [wasOpenedEditing, setWasOpenedEditing] = useState(defaultEditing)
+  const [wasOpenedEditing] = useState(defaultEditing)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [priority, setPriority] = useState<Priority>(task.priority)
   const [dueDate, setDueDate] = useState(task.due_date?.split('T')[0] || '')
   const [newNote, setNewNote] = useState('')
 
-  // Reset internal state when task changes
-  useEffect(() => {
-    setTitle(task.title)
-    setDescription(task.description || '')
-    setPriority(task.priority)
-    setDueDate(task.due_date?.split('T')[0] || '')
-    setIsEditing(defaultEditing)
-    setWasOpenedEditing(defaultEditing)
-    setNewNote('')
-  }, [task.id, defaultEditing])
-
   const { data: notes, createNote, deleteNote } = useTaskNotes(task.id)
-
-  if (!open) return null
 
   const handleSave = () => {
     onUpdate({

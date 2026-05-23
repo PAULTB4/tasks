@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useCategories, useTrashCategories } from '../../hooks/useCategories'
 import { usePendingTaskCounts, useTasks } from '../../hooks/useTasks'
+import { useAuthStore } from '../../hooks/useAuthStore'
 import { CreateCategoryDialog } from './CreateCategoryDialog'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TrashDialog } from './TrashDialog'
@@ -18,6 +19,12 @@ import {
 import { Button } from '../ui/Button'
 
 const EXPANDED_CATEGORIES_STORAGE_KEY = 'taskforge:expanded-categories'
+
+function getExpandedCategoriesStorageKey(userId?: string) {
+  return userId
+    ? `${EXPANDED_CATEGORIES_STORAGE_KEY}:${userId}`
+    : EXPANDED_CATEGORIES_STORAGE_KEY
+}
 
 function CategoryNode({
   category,
@@ -168,6 +175,7 @@ interface CategoryTreeProps {
 }
 
 export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
+  const userId = useAuthStore((s) => s.user?.id)
   const {
     data: categories,
     isLoading,
@@ -180,7 +188,9 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   const { data: pendingTaskCounts } = usePendingTaskCounts()
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[] | null>(() => {
     try {
-      const savedIds = window.localStorage.getItem(EXPANDED_CATEGORIES_STORAGE_KEY)
+      const savedIds = window.localStorage.getItem(
+        getExpandedCategoriesStorageKey(useAuthStore.getState().user?.id),
+      )
       return savedIds ? JSON.parse(savedIds) as string[] : null
     } catch {
       return null
@@ -209,10 +219,10 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   useEffect(() => {
     if (!expandedCategoryIds) return
     window.localStorage.setItem(
-      EXPANDED_CATEGORIES_STORAGE_KEY,
+      getExpandedCategoriesStorageKey(userId),
       JSON.stringify(expandedCategoryIds),
     )
-  }, [expandedCategoryIds])
+  }, [expandedCategoryIds, userId])
 
   const handleToggleExpanded = (categoryId: string, isExpanded: boolean) => {
     setExpandedCategoryIds((current) => {

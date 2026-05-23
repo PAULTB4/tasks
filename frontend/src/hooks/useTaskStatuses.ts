@@ -80,7 +80,7 @@ export function useTaskStatuses(categoryId?: string | null) {
         onSettled: () => { globalSeedPending = false },
       })
     }
-  }, [userId, query.isLoading, query.isFetching, query.isError, query.data])
+  }, [userId, query.isLoading, query.isFetching, query.isError, query.data, seedGlobalStatuses])
 
   return { ...query, seedGlobalStatuses }
 }

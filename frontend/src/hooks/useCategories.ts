@@ -135,8 +135,10 @@ export function useTrashCategories() {
 }
 
 export function buildCategoryTree(categories: Category[]): Category[] {
-  const map = new Map<string, Category & { children: (Category & { children: any[] })[] }>()
-  const roots: (Category & { children: any[] })[] = []
+  type CategoryWithChildren = Category & { children: CategoryWithChildren[] }
+
+  const map = new Map<string, CategoryWithChildren>()
+  const roots: CategoryWithChildren[] = []
 
   for (const cat of categories) {
     map.set(cat.id, { ...cat, children: [] })
