@@ -28,7 +28,7 @@ function App() {
 
   useEffect(() => {
     initTheme()
-  }, [])
+  }, [initTheme])
 
   useEffect(() => {
     if (!initialized) {

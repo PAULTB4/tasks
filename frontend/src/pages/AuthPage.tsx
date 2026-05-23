@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { insforge } from '../lib/insforge'
 import { useAuthStore } from '../hooks/useAuthStore'
 
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
@@ -55,8 +59,8 @@ export function AuthPage() {
         provider: 'google',
         redirectTo: `${window.location.origin}/dashboard`,
       })
-    } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesion con Google')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Error al iniciar sesion con Google'))
     }
   }
 
@@ -89,8 +93,8 @@ export function AuthPage() {
           navigate('/dashboard')
         }
       }
-    } catch (err: any) {
-      setError(err.message || 'Ocurrio un error')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Ocurrio un error'))
     } finally {
       setLoading(false)
     }
@@ -115,8 +119,8 @@ export function AuthPage() {
       if (verifyError) throw verifyError
       setAuth(data?.user ?? null)
       navigate('/dashboard')
-    } catch (err: any) {
-      setError(err.message || 'Codigo invalido o expirado')
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Codigo invalido o expirado'))
     } finally {
       setLoading(false)
     }

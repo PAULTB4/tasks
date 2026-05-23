@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Camera, KeyRound, Mail, Shield, Upload, User, X } from 'lucide-react'
 import { insforge } from '../../lib/insforge'
 import { useAuthStore } from '../../hooks/useAuthStore'
@@ -39,18 +39,25 @@ const sections: Array<{
 ]
 
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
+  if (!open) return null
+
+  return <SettingsDialogContent onClose={onClose} />
+}
+
+function SettingsDialogContent({ onClose }: Pick<SettingsDialogProps, 'onClose'>) {
   const { user, updateProfile } = useAuthStore()
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile')
-  const [name, setName] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const profile = user?.profile ?? {}
+  const [name, setName] = useState(typeof profile.name === 'string' ? profile.name : '')
+  const [avatarUrl, setAvatarUrl] = useState(typeof profile.avatar_url === 'string' ? profile.avatar_url : '')
   const [savingProfile, setSavingProfile] = useState(false)
   const [sendingReset, setSendingReset] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const profile = user?.profile ?? {}
   const fallbackAvatar = `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email ?? 'taskforge'}`
-  const previewAvatar = avatarUrl.trim() || profile.avatar_url || fallbackAvatar
+  const profileAvatar = typeof profile.avatar_url === 'string' ? profile.avatar_url : ''
+  const previewAvatar = avatarUrl.trim() || profileAvatar || fallbackAvatar
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [passwordStep, setPasswordStep] = useState<'send' | 'verify' | 'reset'>('send')
@@ -59,22 +66,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [resetToken, setResetToken] = useState('')
   const resetOtpRefs = useRef<(HTMLInputElement | null)[]>([])
-
-  useEffect(() => {
-    if (!open) return
-    setActiveSection('profile')
-    setName(profile.name ?? '')
-    setAvatarUrl(profile.avatar_url ?? '')
-    setMessage(null)
-    setError(null)
-    setPasswordStep('send')
-    setResetToken('')
-    setNewPassword('')
-    setConfirmPassword('')
-    setResetOtp(['', '', '', '', '', ''])
-  }, [open, profile.name, profile.avatar_url])
-
-  if (!open) return null
 
   const handleSaveProfile = async (event: React.FormEvent) => {
     event.preventDefault()

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Dialog } from '../ui/Dialog'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -33,6 +33,15 @@ const CATEGORY_TYPE_OPTIONS = [
 ]
 
 export function CreateCategoryDialog({
+  open,
+  ...props
+}: CreateCategoryDialogProps) {
+  if (!open) return null
+
+  return <CreateCategoryDialogContent key={`${props.editCategory?.id ?? 'create'}:${props.parentId ?? 'root'}:${props.defaultType ?? 'list'}`} open={open} {...props} />
+}
+
+function CreateCategoryDialogContent({
   parentId,
   open,
   onClose,
@@ -43,23 +52,12 @@ export function CreateCategoryDialog({
   onEditSubmit,
 }: CreateCategoryDialogProps) {
   const isEditMode = !!editCategory
-  const [name, setName] = useState('')
+  const [name, setName] = useState(editCategory?.name ?? '')
   const [type, setType] = useState<'folder' | 'list' | null>(null)
   const selectedType = type ?? defaultType
   const selectedTypeLabel = isEditMode
     ? (editCategory!.type === 'folder' ? 'carpeta' : 'lista')
     : (selectedType === 'folder' ? 'carpeta' : 'lista')
-
-  useEffect(() => {
-    if (open) {
-      if (isEditMode) {
-        setName(editCategory!.name)
-      } else {
-        setName('')
-        setType(null)
-      }
-    }
-  }, [open, isEditMode, editCategory])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

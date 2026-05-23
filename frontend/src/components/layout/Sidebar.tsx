@@ -32,6 +32,7 @@ export function Sidebar({ selectedCategoryId, onSelectCategory, open, onClose }:
     <>
       <div className="flex-1 overflow-y-auto">
         <CategoryTree
+          key={user?.id ?? 'anonymous'}
           selectedId={selectedCategoryId}
           onSelect={handleSelect}
         />

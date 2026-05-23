@@ -32,7 +32,7 @@ export function useTasks(categoryId?: string) {
   useEffect(() => {
     if (!categoryId || !userId) return
 
-    const channel = `tasks:${categoryId}`
+    const channel = `tasks:${userId}:${categoryId}`
 
     const handleTaskCreated = (payload: { task?: Task }) => {
       if (!payload.task || payload.task.category_id !== categoryId) return
@@ -80,10 +80,10 @@ export function useTasks(categoryId?: string) {
   }, [categoryId, queryClient, queryKey, userId])
 
   const publishTaskEvent = async (event: string, payload: Record<string, unknown>) => {
-    if (!categoryId) return
+    if (!categoryId || !userId) return
 
     try {
-      await insforge.realtime.publish(`tasks:${categoryId}`, event, payload)
+      await insforge.realtime.publish(`tasks:${userId}:${categoryId}`, event, payload)
     } catch {
       // Realtime must not block the persisted DB mutation flow.
     }

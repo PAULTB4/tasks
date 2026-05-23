@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { insforge } from '../lib/insforge'
+import { queryClient } from '../lib/queryClient'
 
 interface AuthUser {
   id: string
@@ -21,11 +22,16 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       loading: true,
       initialized: false,
-      setAuth: (user) => set({ user, loading: false, initialized: true }),
+      setAuth: (user) => {
+        if (get().user?.id !== user?.id) {
+          queryClient.clear()
+        }
+        set({ user, loading: false, initialized: true })
+      },
       updateProfile: (profile) =>
         set((state) => ({
           user: state.user
@@ -40,6 +46,7 @@ export const useAuthStore = create<AuthState>()(
         })),
       signOut: async () => {
         await insforge.auth.signOut()
+        queryClient.clear()
         set({ user: null, loading: false, initialized: true })
       },
       initialize: async () => {
@@ -61,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
           loading: false,
           initialized: true,
         })
+        queryClient.clear()
       },
     }),
     {
