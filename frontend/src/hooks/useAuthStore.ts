@@ -2,11 +2,18 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { insforge } from '../lib/insforge'
 
+interface AuthUser {
+  id: string
+  email?: string
+  profile?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 interface AuthState {
-  user: any | null
+  user: AuthUser | null
   loading: boolean
   initialized: boolean
-  setAuth: (user: any | null) => void
+  setAuth: (user: AuthUser | null) => void
   updateProfile: (profile: Record<string, unknown>) => void
   signOut: () => Promise<void>
   initialize: () => Promise<void>
@@ -14,7 +21,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       loading: true,
       initialized: false,
@@ -36,6 +43,8 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, loading: false, initialized: true })
       },
       initialize: async () => {
+        set({ loading: true })
+
         try {
           // Try SDK first — it will refresh session via httpOnly cookie if present
           const { data } = await insforge.auth.getCurrentUser()
@@ -44,13 +53,11 @@ export const useAuthStore = create<AuthState>()(
             return
           }
         } catch {
-          // SDK session expired or cookie missing — fall through to persisted user
+          // SDK session expired or cookie missing — do not trust persisted UI state.
         }
 
-        // Fallback: use persisted user from localStorage (still shows UI while re-auth needed)
-        const persistedUser = get().user
         set({
-          user: persistedUser ?? null,
+          user: null,
           loading: false,
           initialized: true,
         })
