@@ -1,34 +1,11 @@
 import { useState } from 'react'
-import type { Task } from '../../types'
-import { useTasks } from '../../hooks/useTasks'
+import { toCreateTaskInput, useTasks } from '../../hooks/useTasks'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
-import { TaskDetailModal } from '../tasks/TaskDetailModal'
 import type { Priority } from '../../types'
 import { Pencil, Trash2 } from 'lucide-react'
-import { WarningDialog } from '../warnings/WarningDialog'
-
-const priorityLabels: Record<Priority, { label: string; color: string }> = {
-  low: { label: 'Baja', color: 'bg-slate-100 text-slate-600' },
-  medium: { label: 'Media', color: 'bg-amber-100 text-amber-700' },
-  high: { label: 'Alta', color: 'bg-orange-100 text-orange-700' },
-  urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700' },
-}
-
-function getDueDateInfo(dueDate: string): { label: string; color: string } {
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const due = new Date(dueDate)
-  due.setHours(0, 0, 0, 0)
-  const diffMs = due.getTime() - now.getTime()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) return { label: 'Vencido', color: 'text-red-600 dark:text-red-400' }
-  if (diffDays === 0) return { label: 'Hoy', color: 'text-red-600 dark:text-red-400' }
-  if (diffDays === 1) return { label: '1d', color: 'text-orange-600 dark:text-orange-400' }
-  if (diffDays <= 3) return { label: `${diffDays}d`, color: 'text-amber-600 dark:text-amber-400' }
-  if (diffDays <= 7) return { label: `${diffDays}d`, color: 'text-blue-600 dark:text-blue-400' }
-  return { label: `${diffDays}d`, color: 'text-surface-500 dark:text-surface-400' }
-}
+import { TaskModals } from './TaskModals'
+import { useTaskModalState } from '../../hooks/useTaskModalState'
+import { getDueDateInfo, priorityConfig, prioritySelectOptions } from '../../lib/taskDisplay'
 
 interface ListViewProps {
   categoryId: string
@@ -37,32 +14,17 @@ interface ListViewProps {
 export function ListView({ categoryId }: ListViewProps) {
   const { data: tasks, isLoading, createTask, updateTask, deleteTask } = useTasks(categoryId)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [editingTask, setEditingTask] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
   const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all')
+  const taskModals = useTaskModalState()
 
   const filteredTasks = tasks?.filter((task) => {
     if (filterPriority !== 'all' && task.priority !== filterPriority) return false
     return true
   })
 
-  const handleCreateTask = (data: {
-    title: string
-    description: string
-    priority: Priority
-    status_id: string
-    due_date: string | null
-  }) => {
+  const handleCreateTask = (data: Parameters<typeof toCreateTaskInput>[1]) => {
     createTask.mutate(
-      {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        status_id: data.status_id,
-        due_date: data.due_date,
-        category_id: categoryId,
-      },
+      toCreateTaskInput(categoryId, data),
       { onSuccess: () => setCreateDialogOpen(false) }
     )
   }
@@ -84,10 +46,9 @@ export function ListView({ categoryId }: ListViewProps) {
           className="text-xs px-2 py-1.5 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-900 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">Todas</option>
-          <option value="low">Baja</option>
-          <option value="medium">Media</option>
-          <option value="high">Alta</option>
-          <option value="urgent">Urgente</option>
+          {prioritySelectOptions.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
         <button
           onClick={() => setCreateDialogOpen(true)}
@@ -105,7 +66,7 @@ export function ListView({ categoryId }: ListViewProps) {
         ) : (
           <div className="divide-y divide-surface-100 dark:divide-surface-800">
             {filteredTasks?.map((task) => {
-              const priority = priorityLabels[task.priority]
+              const priority = priorityConfig[task.priority]
               const dueInfo = task.due_date ? getDueDateInfo(task.due_date) : null
               return (
                 <div
@@ -114,10 +75,7 @@ export function ListView({ categoryId }: ListViewProps) {
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingTask(false)
-                      setSelectedTask(task)
-                    }}
+                    onClick={() => taskModals.openTask(task)}
                     className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4 text-left"
                   >
                     <div className="flex-1 min-w-0">
@@ -126,11 +84,11 @@ export function ListView({ categoryId }: ListViewProps) {
                         <p className="hidden sm:block text-xs text-surface-400 dark:text-surface-500 truncate mt-0.5">{task.description}</p>
                       )}
                     </div>
-                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.color}`}>
+                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${priority.listColor}`}>
                       {priority.label}
                     </span>
                     {dueInfo && (
-                      <span className={`text-[10px] font-medium flex-shrink-0 ${dueInfo.color}`}>
+                      <span className={`text-[10px] font-medium flex-shrink-0 ${dueInfo.color} ${dueInfo.darkColor}`}>
                         {dueInfo.label}
                       </span>
                     )}
@@ -138,10 +96,7 @@ export function ListView({ categoryId }: ListViewProps) {
                   <div className="flex shrink-0 gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingTask(true)
-                        setSelectedTask(task)
-                      }}
+                      onClick={() => taskModals.editTask(task)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-surface-400 hover:bg-surface-100 hover:text-brand-600 dark:hover:bg-surface-800 dark:hover:text-brand-300"
                       aria-label="Editar tarea"
                       title="Editar"
@@ -150,7 +105,7 @@ export function ListView({ categoryId }: ListViewProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setTaskToDelete(task)}
+                      onClick={() => taskModals.requestDelete(task)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-surface-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                       aria-label="Eliminar tarea"
                       title="Eliminar"
@@ -173,37 +128,13 @@ export function ListView({ categoryId }: ListViewProps) {
         isSubmitting={createTask.isPending}
       />
 
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          open={!!selectedTask}
-          defaultEditing={editingTask}
-          onClose={() => {
-            setSelectedTask(null)
-            setEditingTask(false)
-          }}
-          onUpdate={(data) => updateTask.mutate(data)}
-          isUpdating={updateTask.isPending}
-        />
-      )}
-
-      {taskToDelete && (
-        <WarningDialog
-          open={!!taskToDelete}
-          title="Eliminar tarea"
-          heading={`¿Eliminar “${taskToDelete.title}”?`}
-          message="La tarea se eliminará de esta lista."
-          confirmLabel="Eliminar"
-          pendingLabel="Eliminando..."
-          isPending={deleteTask.isPending}
-          onClose={() => setTaskToDelete(null)}
-          onConfirm={() => {
-            deleteTask.mutate(taskToDelete.id, {
-              onSuccess: () => setTaskToDelete(null),
-            })
-          }}
-        />
-      )}
+      <TaskModals
+        state={taskModals}
+        isUpdating={updateTask.isPending}
+        isDeleting={deleteTask.isPending}
+        onUpdateTask={(data) => updateTask.mutate(data)}
+        onDeleteTask={(task, onSuccess) => deleteTask.mutate(task.id, { onSuccess })}
+      />
     </div>
   )
 }

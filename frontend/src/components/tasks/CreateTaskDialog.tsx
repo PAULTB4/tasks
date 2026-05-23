@@ -18,18 +18,20 @@ const priorityOptions: Array<{
   { value: 'urgent', label: 'Urgente', className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300' },
 ]
 
+export interface CreateTaskFormData {
+  title: string
+  description: string
+  priority: Priority
+  status_id: string
+  due_date: string | null
+}
+
 interface CreateTaskDialogProps {
   categoryId: string
   defaultStatusId?: string
   open: boolean
   onClose: () => void
-  onSubmit: (data: {
-    title: string
-    description: string
-    priority: Priority
-    status_id: string
-    due_date: string | null
-  }) => void
+  onSubmit: (data: CreateTaskFormData) => void
   isSubmitting: boolean
 }
 

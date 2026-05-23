@@ -3,10 +3,10 @@ import { persist } from 'zustand/middleware'
 import { insforge } from '../lib/insforge'
 import { queryClient } from '../lib/queryClient'
 
-interface AuthUser {
+export interface AuthUser {
   id: string
-  email?: string
-  profile?: Record<string, unknown>
+  email: string
+  profile?: Record<string, unknown> | null
   [key: string]: unknown
 }
 

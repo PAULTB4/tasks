@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { insforge } from '../lib/insforge'
 import { useAuthStore } from './useAuthStore'
 import type { Task, Priority } from '../types'
+import type { CreateTaskFormData } from '../components/tasks/CreateTaskDialog'
 
 type TaskCountRow = Pick<Task, 'category_id' | 'status_id'>
 
@@ -201,6 +202,17 @@ export function useTasks(categoryId?: string) {
   })
 
   return { ...query, createTask, updateTask, deleteTask }
+}
+
+export function toCreateTaskInput(categoryId: string, data: CreateTaskFormData): CreateTaskInput {
+  return {
+    title: data.title,
+    description: data.description,
+    priority: data.priority,
+    status_id: data.status_id,
+    due_date: data.due_date,
+    category_id: categoryId,
+  }
 }
 
 export function usePendingTaskCounts() {
