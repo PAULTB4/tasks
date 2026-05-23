@@ -398,7 +398,7 @@ function SettingsDialogContent({ onClose }: Pick<SettingsDialogProps, 'onClose'>
                         >
                           {uploading ? 'Subiendo...' : 'Subir imagen'}
                         </Button>
-                        {(avatarUrl.trim() || profile.avatar_url) && (
+                        {(avatarUrl.trim() || profileAvatar) && (
                           <Button
                             type="button"
                             variant="ghost"

@@ -1,6 +1,5 @@
-import { AlertTriangle } from 'lucide-react'
-import { Button } from '../ui/Button'
 import { Dialog } from '../ui/Dialog'
+import { WarningPanel } from './WarningPanel'
 
 interface WarningDialogProps {
   open: boolean
@@ -29,35 +28,17 @@ export function WarningDialog({
 }: WarningDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} title={title}>
-      <div className="space-y-5">
-        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
-          <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
-            <AlertTriangle size={20} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-surface-900 dark:text-surface-100">
-              {heading}
-            </p>
-            <p className="mt-1 text-sm leading-6 text-surface-500 dark:text-surface-400">
-              {message}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 border-t border-surface-200 pt-4 dark:border-surface-800">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            variant={confirmVariant}
-            onClick={onConfirm}
-            disabled={isPending}
-          >
-            {isPending ? pendingLabel ?? confirmLabel : confirmLabel}
-          </Button>
-        </div>
-      </div>
+      <WarningPanel
+        tone="amber"
+        heading={heading}
+        message={message}
+        confirmLabel={confirmLabel}
+        pendingLabel={pendingLabel}
+        isPending={isPending}
+        confirmVariant={confirmVariant}
+        onClose={onClose}
+        onConfirm={onConfirm}
+      />
     </Dialog>
   )
 }

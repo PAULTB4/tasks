@@ -18,8 +18,10 @@ export function Sidebar({ selectedCategoryId, onSelectCategory, open, onClose }:
   const { user, signOut } = useAuthStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
-  const avatarUrl = user?.profile?.avatar_url || `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email}`
-  const displayName = user?.profile?.name || user?.email
+  const profileName = typeof user?.profile?.name === 'string' ? user.profile.name : ''
+  const profileAvatarUrl = typeof user?.profile?.avatar_url === 'string' ? user.profile.avatar_url : ''
+  const avatarUrl = profileAvatarUrl || `https://api.dicebear.com/8.x/identicon/svg?seed=${user?.email}`
+  const displayName = profileName || user?.email
 
   const isDrawer = open !== undefined
 
@@ -49,7 +51,7 @@ export function Sidebar({ selectedCategoryId, onSelectCategory, open, onClose }:
             <p className="text-sm font-medium text-surface-800 dark:text-surface-200 truncate">
               {displayName}
             </p>
-            {user?.profile?.name && (
+            {profileName && (
               <p className="text-xs text-surface-400 truncate">{user?.email}</p>
             )}
           </div>

@@ -9,14 +9,14 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import type { Task, Priority } from '../../types'
-import { useTasks } from '../../hooks/useTasks'
+import type { Task } from '../../types'
+import { toCreateTaskInput, useTasks } from '../../hooks/useTasks'
 import { useTaskStatuses } from '../../hooks/useTaskStatuses'
 import { KanbanColumn } from './KanbanColumn'
 import { TaskCard } from '../tasks/TaskCard'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
-import { TaskDetailModal } from '../tasks/TaskDetailModal'
-import { WarningDialog } from '../warnings/WarningDialog'
+import { TaskModals } from '../tasks/TaskModals'
+import { useTaskModalState } from '../../hooks/useTaskModalState'
 
 interface KanbanBoardProps {
   categoryId: string
@@ -28,9 +28,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [defaultStatusId, setDefaultStatusId] = useState<string | undefined>()
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [editingTask, setEditingTask] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const taskModals = useTaskModalState()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -59,22 +57,9 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
     }
   }
 
-  const handleCreateTask = (data: {
-    title: string
-    description: string
-    priority: Priority
-    status_id: string
-    due_date: string | null
-  }) => {
+  const handleCreateTask = (data: Parameters<typeof toCreateTaskInput>[1]) => {
     createTask.mutate(
-      {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        status_id: data.status_id,
-        due_date: data.due_date,
-        category_id: categoryId,
-      },
+      toCreateTaskInput(categoryId, data),
       {
         onSuccess: () => setCreateDialogOpen(false),
       }
@@ -106,15 +91,9 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
               key={status.id}
               status={status}
               tasks={getTasksByStatus(status.id)}
-              onTaskClick={(task) => {
-                setEditingTask(false)
-                setSelectedTask(task)
-              }}
-              onTaskEdit={(task) => {
-                setEditingTask(true)
-                setSelectedTask(task)
-              }}
-              onTaskDelete={setTaskToDelete}
+              onTaskClick={taskModals.openTask}
+              onTaskEdit={taskModals.editTask}
+              onTaskDelete={taskModals.requestDelete}
               onCreateTask={() => {
                 setDefaultStatusId(status.id)
                 setCreateDialogOpen(true)
@@ -141,37 +120,13 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         isSubmitting={createTask.isPending}
       />
 
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          open={!!selectedTask}
-          defaultEditing={editingTask}
-          onClose={() => {
-            setSelectedTask(null)
-            setEditingTask(false)
-          }}
-          onUpdate={(data) => updateTask.mutate(data)}
-          isUpdating={updateTask.isPending}
-        />
-      )}
-
-      {taskToDelete && (
-        <WarningDialog
-          open={!!taskToDelete}
-          title="Eliminar tarea"
-          heading={`¿Eliminar “${taskToDelete.title}”?`}
-          message="La tarea se eliminará de esta lista."
-          confirmLabel="Eliminar"
-          pendingLabel="Eliminando..."
-          isPending={deleteTask.isPending}
-          onClose={() => setTaskToDelete(null)}
-          onConfirm={() => {
-            deleteTask.mutate(taskToDelete.id, {
-              onSuccess: () => setTaskToDelete(null),
-            })
-          }}
-        />
-      )}
+      <TaskModals
+        state={taskModals}
+        isUpdating={updateTask.isPending}
+        isDeleting={deleteTask.isPending}
+        onUpdateTask={(data) => updateTask.mutate(data)}
+        onDeleteTask={(task, onSuccess) => deleteTask.mutate(task.id, { onSuccess })}
+      />
     </>
   )
 }

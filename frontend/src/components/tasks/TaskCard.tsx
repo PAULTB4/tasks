@@ -1,61 +1,6 @@
-import type { Task, Priority } from '../../types'
+import type { Task } from '../../types'
 import { Flag, MessageSquare, Pencil, Trash2, Clock } from 'lucide-react'
-
-const priorityConfig: Record<
-  Priority,
-  { label: string; color: string; darkColor: string; iconColor: string }
-> = {
-  low: {
-    label: 'Baja',
-    color: 'bg-green-100 text-green-800',
-    darkColor: 'dark:bg-green-900/40 dark:text-green-300',
-    iconColor: 'text-green-500',
-  },
-  medium: {
-    label: 'Media',
-    color: 'bg-yellow-100 text-yellow-800',
-    darkColor: 'dark:bg-yellow-900/40 dark:text-yellow-300',
-    iconColor: 'text-yellow-500',
-  },
-  high: {
-    label: 'Alta',
-    color: 'bg-orange-100 text-orange-800',
-    darkColor: 'dark:bg-orange-900/40 dark:text-orange-300',
-    iconColor: 'text-orange-500',
-  },
-  urgent: {
-    label: 'Urgente',
-    color: 'bg-red-100 text-red-800',
-    darkColor: 'dark:bg-red-900/40 dark:text-red-300',
-    iconColor: 'text-red-500',
-  },
-}
-
-function getDueDateInfo(dueDate: string): { label: string; color: string; darkColor: string } {
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const due = new Date(dueDate)
-  due.setHours(0, 0, 0, 0)
-  const diffMs = due.getTime() - now.getTime()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 0) {
-    return { label: 'Vencido', color: 'text-red-600', darkColor: 'dark:text-red-400' }
-  }
-  if (diffDays === 0) {
-    return { label: 'Hoy', color: 'text-red-600', darkColor: 'dark:text-red-400' }
-  }
-  if (diffDays === 1) {
-    return { label: '1d', color: 'text-orange-600', darkColor: 'dark:text-orange-400' }
-  }
-  if (diffDays <= 3) {
-    return { label: `${diffDays}d`, color: 'text-amber-600', darkColor: 'dark:text-amber-400' }
-  }
-  if (diffDays <= 7) {
-    return { label: `${diffDays}d`, color: 'text-blue-600', darkColor: 'dark:text-blue-400' }
-  }
-  return { label: `${diffDays}d`, color: 'text-surface-500', darkColor: 'dark:text-surface-400' }
-}
+import { getDueDateInfo, priorityConfig } from '../../lib/taskDisplay'
 
 interface TaskCardProps {
   task: Task
@@ -87,7 +32,7 @@ export function TaskCard({ task, onClick, onEdit, onDelete }: TaskCardProps) {
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium ${priority.color} ${priority.darkColor}`}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium ${priority.cardColor} ${priority.cardDarkColor}`}
             >
               <Flag size={14} className={priority.iconColor} />
               <span>{priority.label}</span>

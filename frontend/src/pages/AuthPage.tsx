@@ -7,6 +7,15 @@ function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
 }
 
+function AuthBrandHeader({ subtitle }: { subtitle: string }) {
+  return (
+    <div className="text-center mb-8">
+      <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
+      <p className="text-surface-500 mt-2">{subtitle}</p>
+    </div>
+  )
+}
+
 export function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
@@ -144,10 +153,7 @@ export function AuthPage() {
     return (
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
-            <p className="text-surface-500 mt-2">Verifica tu email</p>
-          </div>
+          <AuthBrandHeader subtitle="Verifica tu email" />
 
           <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
             <div className="text-center mb-6">
@@ -234,12 +240,7 @@ export function AuthPage() {
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
-          <p className="text-surface-500 mt-2">
-            {isLogin ? 'Inicia sesion para continuar' : 'Crea tu cuenta'}
-          </p>
-        </div>
+        <AuthBrandHeader subtitle={isLogin ? 'Inicia sesion para continuar' : 'Crea tu cuenta'} />
 
         <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
           <div className="flex mb-6 bg-surface-100 dark:bg-surface-800 rounded-lg p-1">

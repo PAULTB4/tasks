@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Task, Priority } from '../../types'
 import { useTaskNotes } from '../../hooks/useTaskNotes'
+import { prioritySelectOptions } from '../../lib/taskDisplay'
 
 interface TaskDetailModalProps {
   task: Task
@@ -127,10 +128,9 @@ function TaskDetailModalContent({ task, defaultEditing = false, onClose, onUpdat
                     onChange={(e) => setPriority(e.target.value as Priority)}
                     className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   >
-                    <option value="low">Baja</option>
-                    <option value="medium">Media</option>
-                    <option value="high">Alta</option>
-                    <option value="urgent">Urgente</option>
+                    {prioritySelectOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
