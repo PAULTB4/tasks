@@ -54,8 +54,14 @@ export function TaskCard({ task, onClick, onEdit, onDelete, isDone }: TaskCardPr
             </span>
           ) : dueInfo ? (
             <span className={`flex items-center gap-1.5 text-xs font-bold whitespace-nowrap flex-shrink-0 ${dueInfo.color} ${dueInfo.darkColor}`}>
-              <Clock size={13} />
-              <span>Vence: {dueInfo.label}</span>
+              {dueInfo.isOverdue ? (
+                <span>Vencido</span>
+              ) : (
+                <>
+                  <Clock size={13} />
+                  <span>Vence: {dueInfo.label}</span>
+                </>
+              )}
             </span>
           ) : (
             <span className="text-xs text-surface-400 dark:text-surface-500 font-medium">Sin vencimiento</span>
