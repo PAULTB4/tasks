@@ -1,5 +1,6 @@
 import { useState, type FormEvent, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { insforge } from '../lib/insforge'
 import { useAuthStore } from '../hooks/useAuthStore'
 
@@ -9,9 +10,9 @@ function getErrorMessage(error: unknown, fallback: string) {
 
 function AuthBrandHeader({ subtitle }: { subtitle: string }) {
   return (
-    <div className="text-center mb-8">
-      <h1 className="text-3xl font-bold text-surface-900 dark:text-surface-100">TaskForge</h1>
-      <p className="text-surface-500 mt-2">{subtitle}</p>
+    <div className="text-center mb-6">
+      <h1 className="text-5xl font-black text-brand-500 tracking-tighter leading-none">ztasks</h1>
+      <p className="text-surface-500 mt-2 text-sm">{subtitle}</p>
     </div>
   )
 }
@@ -69,8 +70,13 @@ export function AuthPage() {
         redirectTo: `${window.location.origin}/dashboard`,
       })
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Error al iniciar sesion con Google'))
+      setError(getErrorMessage(err, 'Error al iniciar sesión con Google'))
     }
+  }
+
+  const handleAdminCheck = async (userId: string) => {
+    const { data } = await insforge.database.from('admin_users').select('user_id').eq('user_id', userId).maybeSingle()
+    return !!data
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -86,8 +92,15 @@ export function AuthPage() {
           password,
         })
         if (authError) throw authError
-        setAuth(data?.user ?? null)
-        navigate('/dashboard')
+        const user = data?.user ?? null
+        setAuth(user)
+        
+        if (user) {
+          const isAdmin = await handleAdminCheck(user.id)
+          navigate(isAdmin ? '/admin' : '/dashboard')
+        } else {
+          navigate('/dashboard')
+        }
       } else {
         const { data, error: authError } = await insforge.auth.signUp({
           email,
@@ -96,14 +109,14 @@ export function AuthPage() {
         if (authError) throw authError
         if (data?.requireEmailVerification) {
           setNeedsVerification(true)
-          setSuccess('Te enviamos un codigo de verificacion a tu email. Revisa tu bandeja de entrada.')
+          setSuccess('Te enviamos un código de verificación a tu email. Revisá tu bandeja de entrada.')
         } else {
           setAuth(data?.user ?? null)
           navigate('/dashboard')
         }
       }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Ocurrio un error'))
+      setError(getErrorMessage(err, 'Ocurrió un error'))
     } finally {
       setLoading(false)
     }
@@ -113,7 +126,7 @@ export function AuthPage() {
     e.preventDefault()
     const code = otp.join('')
     if (code.length !== 6) {
-      setError('Ingresa el codigo completo de 6 digitos')
+      setError('Ingresá el código completo de 6 dígitos')
       return
     }
     setError('')
@@ -129,7 +142,7 @@ export function AuthPage() {
       setAuth(data?.user ?? null)
       navigate('/dashboard')
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Codigo invalido o expirado'))
+      setError(getErrorMessage(err, 'Código inválido o expirado'))
     } finally {
       setLoading(false)
     }
@@ -141,9 +154,9 @@ export function AuthPage() {
     setLoading(true)
     try {
       await insforge.auth.resendVerificationEmail({ email })
-      setSuccess('Reenviamos el codigo. Revisa tu email.')
+      setSuccess('Reenviamos el código. Revisá tu email.')
     } catch {
-      setSuccess('Reenviamos el codigo. Revisa tu email.')
+      setSuccess('Reenviamos el código. Revisá tu email.')
     } finally {
       setLoading(false)
     }
@@ -151,21 +164,37 @@ export function AuthPage() {
 
   if (needsVerification) {
     return (
-      <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          <AuthBrandHeader subtitle="Verifica tu email" />
+      <div className="min-h-screen bg-surface-50 text-surface-800 selection:bg-brand-500 selection:text-white font-sans grid-pattern relative overflow-hidden flex items-center justify-center px-4">
+        {/* Decorative radial glows */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] radial-glow-violet opacity-35 pointer-events-none blur-[100px]" />
+        <div className="absolute bottom-10 right-1/4 w-[600px] h-[600px] radial-glow-blue opacity-30 pointer-events-none blur-[120px]" />
 
-          <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
+        <div className="w-full max-w-md relative z-10">
+          {/* Botón Volver */}
+          <button
+            type="button"
+            onClick={() => { setNeedsVerification(false); setError(''); setSuccess(''); setOtp(['', '', '', '', '', '']) }}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-surface-400 hover:text-brand-500 transition-colors mb-4 group"
+          >
+            <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+            Volver al registro
+          </button>
+
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-surface-200/80 p-8 shadow-2xl shadow-surface-300/40 relative group/card">
+            <div className="absolute -inset-px rounded-2xl bg-gradient-to-tr from-brand-500/5 via-transparent to-brand-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none" />
+            
+            <AuthBrandHeader subtitle="Verificá tu email" />
+
             <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-brand-100 dark:bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-brand-600 dark:text-brand-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-brand-100">
+                <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <p className="text-sm text-surface-600">
-                Ingresa el codigo de 6 digitos que enviamos a
+              <p className="text-xs text-surface-500">
+                Ingresá el código de 6 dígitos que enviamos a
               </p>
-              <p className="text-sm font-medium text-surface-900 dark:text-surface-100 mt-1">{email}</p>
+              <p className="text-sm font-bold text-surface-800 mt-1">{email}</p>
             </div>
 
             <form onSubmit={handleVerify} className="space-y-4">
@@ -180,19 +209,19 @@ export function AuthPage() {
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                    className="w-12 h-14 text-center text-xl font-bold border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    className="w-12 h-14 text-center text-xl font-bold border border-surface-200 bg-white text-surface-950 rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 transition-all"
                   />
                 ))}
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+                <div className="p-3 bg-red-50 border border-red-150 rounded-xl text-xs font-semibold text-red-600">
                   {error}
                 </div>
               )}
 
               {success && (
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-600 dark:text-green-400">
+                <div className="p-3 bg-green-50 border border-green-150 rounded-xl text-xs font-semibold text-green-600">
                   {success}
                 </div>
               )}
@@ -200,7 +229,7 @@ export function AuthPage() {
               <button
                 type="submit"
                 disabled={loading || otp.join('').length !== 6}
-                className="w-full py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/10 border border-brand-400/10 transition-all text-sm font-bold hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -218,15 +247,15 @@ export function AuthPage() {
                 type="button"
                 onClick={handleResend}
                 disabled={loading}
-                className="text-sm text-brand-600 dark:text-brand-500 hover:underline font-medium disabled:opacity-50"
+                className="text-xs text-brand-500 hover:text-brand-600 hover:underline font-bold disabled:opacity-50"
               >
-                Reenviar codigo
+                Reenviar código
               </button>
               <br />
               <button
                 type="button"
                 onClick={() => { setNeedsVerification(false); setError(''); setSuccess(''); setOtp(['', '', '', '', '', '']) }}
-                className="text-sm text-surface-400 dark:text-surface-500 hover:text-surface-600 dark:hover:text-surface-300"
+                className="text-xs text-surface-400 hover:text-surface-500 font-medium transition-colors"
               >
                 Volver al registro
               </button>
@@ -238,26 +267,45 @@ export function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <AuthBrandHeader subtitle={isLogin ? 'Inicia sesion para continuar' : 'Crea tu cuenta'} />
+    <div className="min-h-screen bg-surface-50 text-surface-800 selection:bg-brand-500 selection:text-white font-sans grid-pattern relative overflow-hidden flex items-center justify-center px-4">
+      {/* Decorative radial glows */}
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] radial-glow-violet opacity-35 pointer-events-none blur-[100px]" />
+      <div className="absolute bottom-10 right-1/4 w-[600px] h-[600px] radial-glow-blue opacity-30 pointer-events-none blur-[120px]" />
 
-        <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 p-8">
-          <div className="flex mb-6 bg-surface-100 dark:bg-surface-800 rounded-lg p-1">
+      <div className="w-full max-w-md relative z-10">
+        {/* Botón Volver */}
+        <Link 
+          to="/" 
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-surface-400 hover:text-brand-500 transition-colors mb-4 group"
+        >
+          <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+          Volver
+        </Link>
+
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-surface-200/80 p-8 shadow-2xl shadow-surface-300/40 relative group/card">
+          <div className="absolute -inset-px rounded-2xl bg-gradient-to-tr from-brand-500/5 via-transparent to-brand-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 pointer-events-none" />
+          
+          <AuthBrandHeader subtitle={isLogin ? 'Iniciá sesión para continuar' : 'Creá tu cuenta'} />
+
+          <div className="flex mb-6 bg-surface-100 rounded-xl p-1 border border-surface-200/40">
             <button
               type="button"
               onClick={() => { setIsLogin(true); setError('') }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                isLogin 
+                  ? 'bg-white text-surface-900 shadow-sm border border-surface-200/20' 
+                  : 'text-surface-400 hover:text-surface-500 hover:bg-surface-50/50'
               }`}
             >
-              Iniciar sesion
+              Iniciar sesión
             </button>
             <button
               type="button"
               onClick={() => { setIsLogin(false); setError('') }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${
-                !isLogin ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm' : 'text-surface-500 dark:text-surface-400'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                !isLogin 
+                  ? 'bg-white text-surface-900 shadow-sm border border-surface-200/20' 
+                  : 'text-surface-400 hover:text-surface-500 hover:bg-surface-50/50'
               }`}
             >
               Registrarse
@@ -266,7 +314,7 @@ export function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-surface-700 dark:text-surface-400 mb-1">
+              <label htmlFor="email" className="block text-xs font-bold text-surface-500 uppercase tracking-wider mb-1.5">
                 Email
               </label>
               <input
@@ -276,13 +324,13 @@ export function AuthPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="tu@email.com"
-                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
+                className="w-full px-3.5 py-2 border border-surface-200 bg-white text-surface-950 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 placeholder:text-surface-400/70 transition-all font-sans"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-surface-700 dark:text-surface-400 mb-1">
-                Contrasena
+              <label htmlFor="password" className="block text-xs font-bold text-surface-500 uppercase tracking-wider mb-1.5">
+                Contraseña
               </label>
               <input
                 id="password"
@@ -291,19 +339,19 @@ export function AuthPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                placeholder="Minimo 6 caracteres"
-                className="w-full px-3 py-2 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-surface-400"
+                placeholder="Mínimo 6 caracteres"
+                className="w-full px-3.5 py-2 border border-surface-200 bg-white text-surface-950 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 placeholder:text-surface-400/70 transition-all font-sans"
               />
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
+              <div className="p-3 bg-red-50 border border-red-150 rounded-xl text-xs font-semibold text-red-600">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-600 dark:text-green-400">
+              <div className="p-3 bg-green-50 border border-green-150 rounded-xl text-xs font-semibold text-green-600">
                 {success}
               </div>
             )}
@@ -311,7 +359,7 @@ export function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/10 border border-brand-400/10 transition-all text-sm font-bold hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -319,7 +367,7 @@ export function AuthPage() {
                   Cargando...
                 </span>
               ) : isLogin ? (
-                'Iniciar sesion'
+                'Iniciar sesión'
               ) : (
                 'Crear cuenta'
               )}
@@ -327,20 +375,11 @@ export function AuthPage() {
           </form>
 
           <div className="mt-4">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-surface-200 dark:border-surface-700" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-white dark:bg-surface-900 px-2 text-surface-400">o continuar con</span>
-              </div>
-            </div>
-
             <button
               type="button"
               onClick={handleGoogleAuth}
               disabled={loading}
-              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 border border-surface-300 dark:border-surface-700 bg-white dark:bg-surface-950 text-surface-900 dark:text-surface-100 rounded-lg hover:bg-surface-50 dark:hover:bg-surface-900 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 border border-surface-200 bg-white hover:bg-surface-50 text-surface-700 rounded-xl transition-all text-sm font-bold hover:border-surface-300 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -352,14 +391,14 @@ export function AuthPage() {
             </button>
           </div>
 
-          <p className="mt-6 text-center text-xs text-surface-400 dark:text-surface-500">
-            {isLogin ? 'No tenes cuenta?' : 'Ya tenes cuenta?'}{' '}
+          <p className="mt-6 text-center text-xs text-surface-400">
+            {isLogin ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?'}{' '}
             <button
               type="button"
               onClick={() => { setIsLogin(!isLogin); setError('') }}
-              className="text-brand-600 dark:text-brand-500 hover:underline font-medium"
+              className="text-brand-500 hover:text-brand-600 font-bold transition-colors"
             >
-              {isLogin ? 'Registrate' : 'Inicia sesion'}
+              {isLogin ? 'Registrate' : 'Iniciá sesión'}
             </button>
           </p>
         </div>

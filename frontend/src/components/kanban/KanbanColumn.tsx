@@ -14,11 +14,13 @@ function SortableTaskCard({
   onClick,
   onEdit,
   onDelete,
+  isDone,
 }: {
   task: Task
   onClick: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (task: Task) => void
+  isDone?: boolean
 }) {
   const {
     attributes,
@@ -40,7 +42,7 @@ function SortableTaskCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} onClick={onClick} onEdit={onEdit} onDelete={onDelete} />
+      <TaskCard task={task} onClick={onClick} onEdit={onEdit} onDelete={onDelete} isDone={isDone} />
     </div>
   )
 }
@@ -66,6 +68,12 @@ export function KanbanColumn({
     id: status.id,
     data: { type: 'column', status },
   })
+
+  const isDoneColumn = status.name.toLowerCase() === 'completado' ||
+                       status.name.toLowerCase() === 'completada' ||
+                       status.name.toLowerCase() === 'done' ||
+                       status.name.toLowerCase() === 'terminado' ||
+                       status.name.toLowerCase() === 'finalizado'
 
   return (
     <div
@@ -112,6 +120,7 @@ export function KanbanColumn({
               onClick={onTaskClick}
               onEdit={onTaskEdit}
               onDelete={onTaskDelete}
+              isDone={isDoneColumn}
             />
           ))}
         </SortableContext>

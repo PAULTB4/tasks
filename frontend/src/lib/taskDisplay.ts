@@ -55,10 +55,16 @@ export function getDueDateInfo(dueDate: string): { label: string; color: string;
   const diffMs = due.getTime() - now.getTime()
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
 
+  // Formatear la fecha a un formato amigable como "24 May"
+  const day = due.getDate()
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+  const monthLabel = months[due.getMonth()]
+  const staticLabel = `${day} ${monthLabel}`
+
   if (diffDays < 0) return { label: 'Vencido', color: 'text-red-600', darkColor: 'dark:text-red-400' }
   if (diffDays === 0) return { label: 'Hoy', color: 'text-red-600', darkColor: 'dark:text-red-400' }
-  if (diffDays === 1) return { label: '1d', color: 'text-orange-600', darkColor: 'dark:text-orange-400' }
-  if (diffDays <= 3) return { label: `${diffDays}d`, color: 'text-amber-600', darkColor: 'dark:text-amber-400' }
-  if (diffDays <= 7) return { label: `${diffDays}d`, color: 'text-blue-600', darkColor: 'dark:text-blue-400' }
-  return { label: `${diffDays}d`, color: 'text-surface-500', darkColor: 'dark:text-surface-400' }
+  if (diffDays === 1) return { label: 'Mañana', color: 'text-orange-600', darkColor: 'dark:text-orange-400' }
+  if (diffDays <= 3) return { label: staticLabel, color: 'text-amber-600', darkColor: 'dark:text-amber-400' }
+  if (diffDays <= 7) return { label: staticLabel, color: 'text-blue-600', darkColor: 'dark:text-blue-400' }
+  return { label: staticLabel, color: 'text-surface-500', darkColor: 'dark:text-surface-400' }
 }
