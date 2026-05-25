@@ -8,8 +8,8 @@ export function useRealtimeFeedback() {
   useEffect(() => {
     // Subscribe function
     const subscribe = async () => {
-      const { ok, error } = await insforge.realtime.subscribe('feedback')
-      if (!ok) console.error('Subscribe failed:', error?.message)
+      const result = await insforge.realtime.subscribe('feedback')
+      if (!result.ok) console.error('Subscribe failed:', result.error?.message)
     }
 
     // Ensure connected and subscribe

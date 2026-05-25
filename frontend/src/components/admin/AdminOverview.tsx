@@ -72,7 +72,7 @@ export function AdminOverview() {
               key={type}
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium capitalize ${typeColors[type] ?? 'bg-surface-100 text-surface-600'}`}
             >
-              {type === 'bug' ? '🐛' : type === 'suggestion' ? '💡' : '💬'} {type}: {count}
+              {type === 'bug' ? '🐛' : type === 'suggestion' ? '💡' : '💬'} {type}: {count as number}
             </span>
           ))}
           {Object.keys(byType).length === 0 && (
