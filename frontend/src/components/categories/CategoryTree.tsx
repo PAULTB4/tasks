@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCategories, useTrashCategories } from '../../hooks/useCategories'
-import { useTasks } from '../../hooks/useTasks'
+import { usePendingTaskCounts, useTasks } from '../../hooks/useTasks'
+import { useAuthStore } from '../../hooks/useAuthStore'
 import { CreateCategoryDialog } from './CreateCategoryDialog'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
 import { TrashDialog } from './TrashDialog'
+import { DeleteWarningDialog } from '../warnings/DeleteWarningDialog'
+import { CategoryActionsMenu } from './CategoryActionsMenu'
 import type { Category } from '../../types'
 import {
   ChevronDown,
@@ -15,6 +18,14 @@ import {
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 
+const EXPANDED_CATEGORIES_STORAGE_KEY = 'taskforge:expanded-categories'
+
+function getExpandedCategoriesStorageKey(userId?: string) {
+  return userId
+    ? `${EXPANDED_CATEGORIES_STORAGE_KEY}:${userId}`
+    : EXPANDED_CATEGORIES_STORAGE_KEY
+}
+
 function CategoryNode({
   category,
   children,
@@ -23,7 +34,11 @@ function CategoryNode({
   onSelect,
   onCreateSub,
   onCreateTask,
+  onEdit,
   onDelete,
+  pendingTaskCounts,
+  expandedCategoryIds,
+  onToggleExpanded,
   level = 0,
 }: {
   category: Category
@@ -33,11 +48,18 @@ function CategoryNode({
   onSelect: (id: string) => void
   onCreateSub: (parentId: string) => void
   onCreateTask: (categoryId: string) => void
+  onEdit: (id: string) => void
   onDelete: (id: string) => void
+  pendingTaskCounts: Record<string, number>
+  expandedCategoryIds: string[] | null
+  onToggleExpanded: (categoryId: string, isExpanded: boolean) => void
   level: number
 }) {
   const isFolder = category.type === 'folder'
-  const [expanded, setExpanded] = useState(isFolder)
+  const pendingTaskCount = pendingTaskCounts[category.id] ?? 0
+  const expanded = expandedCategoryIds
+    ? expandedCategoryIds.includes(category.id)
+    : isFolder
   const indent = 8 + level * 14
   const connectorLeft = 18 + (level - 1) * 14
 
@@ -66,7 +88,7 @@ function CategoryNode({
         style={{ paddingLeft: `${indent}px` }}
       >
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => onToggleExpanded(category.id, expanded)}
           disabled={!isFolder || children.length === 0}
           className={`inline-flex h-8 w-6 items-center justify-center rounded-md hover:bg-surface-200 dark:hover:bg-surface-700 ${
             !isFolder || children.length === 0 ? 'opacity-0 cursor-default' : ''
@@ -83,7 +105,7 @@ function CategoryNode({
 
         <button
           onClick={() => onSelect(category.id)}
-          className="min-w-0 flex items-center gap-2 py-2 rounded-lg text-left"
+          className="min-w-0 flex w-full items-center gap-2 py-2 rounded-lg text-left"
         >
           {isFolder ? (
             <Folder size={14} className="flex-shrink-0 text-amber-500" />
@@ -99,37 +121,26 @@ function CategoryNode({
           >
             {category.name}
           </span>
+          {!isFolder && pendingTaskCount > 0 && (
+            <span className="ml-auto rounded-full bg-surface-200 px-1.5 py-0.5 text-[10px] font-bold leading-none text-surface-500 dark:bg-surface-800 dark:text-surface-400">
+              {pendingTaskCount}
+            </span>
+          )}
         </button>
 
-        <div className="pr-1 sm:pr-2 flex items-center gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
+        <div className="pr-1 sm:pr-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+          <CategoryActionsMenu
+            isFolder={isFolder}
+            onAdd={() => {
               if (isFolder) {
                 onCreateSub(category.id)
               } else {
                 onCreateTask(category.id)
               }
             }}
-            className="inline-flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-surface-500 hover:bg-surface-200 hover:text-brand-600 dark:text-surface-400 dark:hover:bg-surface-700 dark:hover:text-brand-300 transition-colors"
-            aria-label={isFolder ? 'Nueva lista o carpeta' : 'Nueva tarea'}
-            title={isFolder ? 'Nueva lista o carpeta' : 'Nueva tarea'}
-          >
-            <Plus className="h-[18px] w-[18px]" strokeWidth={2.5} />
-          </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete(category.id)
-            }}
-            className="inline-flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 transition-colors"
-            aria-label="Eliminar"
-            title="Eliminar"
-          >
-            <Trash2 className="h-4 w-4" strokeWidth={2.3} />
-          </button>
+            onEdit={() => onEdit(category.id)}
+            onDelete={() => onDelete(category.id)}
+          />
         </div>
       </div>
       {expanded && isFolder && children.length > 0 && (
@@ -144,7 +155,11 @@ function CategoryNode({
               onSelect={onSelect}
               onCreateSub={onCreateSub}
               onCreateTask={onCreateTask}
+              onEdit={onEdit}
               onDelete={onDelete}
+              pendingTaskCounts={pendingTaskCounts}
+              expandedCategoryIds={expandedCategoryIds}
+              onToggleExpanded={onToggleExpanded}
               level={level + 1}
             />
           ))}
@@ -160,14 +175,27 @@ interface CategoryTreeProps {
 }
 
 export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
+  const userId = useAuthStore((s) => s.user?.id)
   const {
     data: categories,
     isLoading,
     createCategory,
+    updateCategory,
     deleteCategory,
   } = useCategories()
   const { data: deletedCategories } = useTrashCategories()
   const { createTask } = useTasks()
+  const { data: pendingTaskCounts } = usePendingTaskCounts()
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<string[] | null>(() => {
+    try {
+      const savedIds = window.localStorage.getItem(
+        getExpandedCategoriesStorageKey(useAuthStore.getState().user?.id),
+      )
+      return savedIds ? JSON.parse(savedIds) as string[] : null
+    } catch {
+      return null
+    }
+  })
   const [dialogOpen, setDialogOpen] = useState(false)
   const [subcategoryParentId, setSubcategoryParentId] = useState<string | null>(
     null,
@@ -176,6 +204,8 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
     'folder' | 'list'
   >('folder')
   const [taskCategoryId, setTaskCategoryId] = useState<string | null>(null)
+  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null)
+  const [categoryToEditId, setCategoryToEditId] = useState<string | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
 
   const rootCategories = categories?.filter((c) => !c.parent_id) ?? []
@@ -184,6 +214,31 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   ).length
   const getChildren = (parentId: string) =>
     categories?.filter((c) => c.parent_id === parentId) ?? []
+  const categoryToDelete = categories?.find((item) => item.id === categoryToDeleteId)
+
+  useEffect(() => {
+    if (!expandedCategoryIds) return
+    window.localStorage.setItem(
+      getExpandedCategoriesStorageKey(userId),
+      JSON.stringify(expandedCategoryIds),
+    )
+  }, [expandedCategoryIds, userId])
+
+  const handleToggleExpanded = (categoryId: string, isExpanded: boolean) => {
+    setExpandedCategoryIds((current) => {
+      const currentExpandedIds = current ?? (
+        categories
+          ?.filter((category) => category.type === 'folder')
+          .map((category) => category.id) ?? []
+      )
+
+      if (isExpanded) {
+        return currentExpandedIds.filter((id) => id !== categoryId)
+      }
+
+      return [...new Set([...currentExpandedIds, categoryId])]
+    })
+  }
 
   const getDescendantIds = (categoryId: string): string[] => {
     const directChildren = getChildren(categoryId)
@@ -193,6 +248,7 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
       ...directChildren.flatMap((child) => getDescendantIds(child.id)),
     ]
   }
+  const categoryToDeleteIds = categoryToDeleteId ? getDescendantIds(categoryToDeleteId) : []
 
   const handleCreate = (
     name: string,
@@ -218,15 +274,35 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
   }
 
   const handleDelete = (id: string) => {
-    const category = categories?.find((item) => item.id === id)
-    const ids = getDescendantIds(id)
+    setCategoryToDeleteId(id)
+  }
+
+  const handleEdit = (id: string) => {
+    setCategoryToEditId(id)
+  }
+
+  const handleRename = (id: string, name: string) => {
+    updateCategory.mutate(
+      { id, name },
+      { onSuccess: () => setCategoryToEditId(null) },
+    )
+  }
+
+  const handleConfirmDelete = () => {
+    if (!categoryToDeleteId) return
+
+    const category = categories?.find((item) => item.id === categoryToDeleteId)
+    const ids = getDescendantIds(categoryToDeleteId)
     const deletedAs = category?.type === 'list'
       ? 'list'
       : ids.length > 1
         ? 'tree'
         : 'folder'
 
-    deleteCategory.mutate({ ids, rootId: id, deletedAs })
+    deleteCategory.mutate(
+      { ids, rootId: categoryToDeleteId, deletedAs },
+      { onSuccess: () => setCategoryToDeleteId(null) },
+    )
   }
 
   const handleOpenRootDialog = (type: 'folder' | 'list' = 'folder') => {
@@ -242,19 +318,20 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
 
   return (
     <div className="flex h-full min-w-0 flex-col py-2">
-      <header className="flex items-center justify-between px-4 mb-2 mt-2">
-        <h2 className="sr-only">
+      <header className="mx-3 mb-3 mt-2 flex items-center justify-between gap-3 border-b border-surface-200/80 px-1 pb-3 dark:border-surface-800/80">
+        <h2 className="text-xs font-bold uppercase tracking-[0.16em] text-surface-400 dark:text-surface-500">
           Carpetas y listas
         </h2>
         <Button
-          variant="ghost"
+          variant="default"
           size="default"
           onClick={() => handleOpenRootDialog('folder')}
-          className="h-9 w-9 p-0 rounded-xl"
-          aria-label="Nueva carpeta"
-          title="Nueva carpeta"
+          className="h-10 gap-2 rounded-xl px-3 shadow-sm"
+          aria-label="Crear carpeta o lista"
+          title="Crear carpeta o lista"
         >
-          <Plus size={20} />
+          <Plus size={18} strokeWidth={2.6} />
+          <span className="text-sm">Crear</span>
         </Button>
       </header>
 
@@ -294,24 +371,28 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
               onSelect={onSelect}
               onCreateSub={handleCreateSub}
               onCreateTask={handleCreateTask}
+              onEdit={handleEdit}
               onDelete={handleDelete}
+              pendingTaskCounts={pendingTaskCounts ?? {}}
+              expandedCategoryIds={expandedCategoryIds}
+              onToggleExpanded={handleToggleExpanded}
               level={0}
             />
           ))
         )}
       </div>
 
-      <div className="mt-2 border-t border-surface-200 px-2 pt-2 dark:border-surface-800">
+      <div className="mt-2 px-2 pt-1">
         <button
           type="button"
           onClick={() => setTrashOpen(true)}
-          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-800 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-100"
+          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-500 dark:hover:bg-surface-800 dark:hover:text-surface-200"
           title="Papelera"
         >
-          <Trash2 size={16} className="text-surface-400" />
+          <Trash2 size={14} className="text-surface-400 dark:text-surface-500" />
           <span>Papelera</span>
           {trashRootCount > 0 && (
-            <span className="ml-auto rounded-full bg-surface-200 px-2 py-0.5 text-[10px] font-bold text-surface-500 dark:bg-surface-800">
+            <span className="ml-auto rounded-full bg-surface-100 px-1.5 py-0.5 text-[10px] font-semibold text-surface-400 dark:bg-surface-800 dark:text-surface-500">
               {trashRootCount}
             </span>
           )}
@@ -330,6 +411,20 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
         defaultType={defaultCategoryType}
       />
 
+      {categoryToEditId && (() => {
+        const cat = categories?.find((c) => c.id === categoryToEditId)
+        return cat ? (
+          <CreateCategoryDialog
+            editCategory={{ id: cat.id, name: cat.name, type: cat.type }}
+            open={!!categoryToEditId}
+            onClose={() => setCategoryToEditId(null)}
+            onSubmit={() => {}}
+            onEditSubmit={handleRename}
+            isSubmitting={updateCategory.isPending}
+          />
+        ) : null
+      })()}
+
       {taskCategoryId && (
         <CreateTaskDialog
           categoryId={taskCategoryId}
@@ -342,6 +437,19 @@ export function CategoryTree({ selectedId, onSelect }: CategoryTreeProps) {
             )
           }}
           isSubmitting={createTask.isPending}
+        />
+      )}
+
+      {categoryToDelete && (
+        <DeleteWarningDialog
+          open={!!categoryToDelete}
+          title="Confirmar eliminación"
+          itemName={categoryToDelete.name}
+          itemType={categoryToDelete.type}
+          affectedCount={categoryToDeleteIds.length}
+          isDeleting={deleteCategory.isPending}
+          onClose={() => setCategoryToDeleteId(null)}
+          onConfirm={handleConfirmDelete}
         />
       )}
 

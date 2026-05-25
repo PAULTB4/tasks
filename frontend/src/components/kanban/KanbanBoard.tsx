@@ -2,20 +2,21 @@ import { useState } from 'react'
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
   PointerSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core'
-import type { Task, Priority } from '../../types'
-import { useTasks } from '../../hooks/useTasks'
+import type { Task } from '../../types'
+import { toCreateTaskInput, useTasks } from '../../hooks/useTasks'
 import { useTaskStatuses } from '../../hooks/useTaskStatuses'
 import { KanbanColumn } from './KanbanColumn'
 import { TaskCard } from '../tasks/TaskCard'
 import { CreateTaskDialog } from '../tasks/CreateTaskDialog'
-import { TaskDetailModal } from '../tasks/TaskDetailModal'
+import { TaskModals } from '../tasks/TaskModals'
+import { useTaskModalState } from '../../hooks/useTaskModalState'
 
 interface KanbanBoardProps {
   categoryId: string
@@ -27,7 +28,7 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [defaultStatusId, setDefaultStatusId] = useState<string | undefined>()
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const taskModals = useTaskModalState()
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -56,20 +57,9 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
     }
   }
 
-  const handleCreateTask = (data: {
-    title: string
-    description: string
-    priority: Priority
-    status_id: string
-  }) => {
+  const handleCreateTask = (data: Parameters<typeof toCreateTaskInput>[1]) => {
     createTask.mutate(
-      {
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        status_id: data.status_id,
-        category_id: categoryId,
-      },
+      toCreateTaskInput(categoryId, data),
       {
         onSuccess: () => setCreateDialogOpen(false),
       }
@@ -91,17 +81,19 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="h-full flex gap-4 overflow-x-auto p-6">
+        <div className="h-full flex flex-col sm:flex-row gap-3 sm:gap-4 overflow-y-auto sm:overflow-y-hidden overflow-x-hidden p-3 sm:p-6">
           {statuses?.map((status) => (
             <KanbanColumn
               key={status.id}
               status={status}
               tasks={getTasksByStatus(status.id)}
-              onTaskClick={setSelectedTask}
+              onTaskClick={taskModals.openTask}
+              onTaskEdit={taskModals.editTask}
+              onTaskDelete={taskModals.requestDelete}
               onCreateTask={() => {
                 setDefaultStatusId(status.id)
                 setCreateDialogOpen(true)
@@ -128,16 +120,13 @@ export function KanbanBoard({ categoryId }: KanbanBoardProps) {
         isSubmitting={createTask.isPending}
       />
 
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          open={!!selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdate={(data) => updateTask.mutate(data)}
-          onDelete={(id) => deleteTask.mutate(id)}
-          isUpdating={updateTask.isPending}
-        />
-      )}
+      <TaskModals
+        state={taskModals}
+        isUpdating={updateTask.isPending}
+        isDeleting={deleteTask.isPending}
+        onUpdateTask={(data) => updateTask.mutate(data)}
+        onDeleteTask={(task, onSuccess) => deleteTask.mutate(task.id, { onSuccess })}
+      />
     </>
   )
 }

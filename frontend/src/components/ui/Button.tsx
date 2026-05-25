@@ -11,9 +11,9 @@ const buttonVariants = cva(
         destructive:
           'bg-red-500 text-white hover:bg-red-600 dark:hover:bg-red-600',
         outline:
-          'border border-surface-300 dark:border-surface-400 bg-transparent hover:bg-surface-100 dark:hover:bg-surface-200',
+          'border border-surface-300 dark:border-surface-700 bg-transparent hover:bg-surface-100 dark:hover:bg-surface-800',
         ghost:
-          'hover:bg-surface-100 dark:hover:bg-surface-200 text-surface-600 dark:text-surface-300',
+          'hover:bg-surface-100 dark:hover:bg-surface-800 text-surface-600 dark:text-surface-300',
         link: 'text-brand-600 dark:text-brand-500 underline-offset-4 hover:underline',
       },
       size: {
@@ -46,4 +46,4 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = 'Button'
 
-export { Button, buttonVariants }
+export { Button }

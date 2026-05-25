@@ -5,19 +5,22 @@ import type { Category } from '../types'
 
 export function useCategories() {
   const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.user?.id)
 
   const query = useQuery({
-    queryKey: ['categories'],
+    queryKey: ['categories', userId],
     queryFn: async () => {
       const { data, error } = await insforge
         .database.from('categories')
         .select('*')
+        .eq('user_id', userId!)
         .is('deleted_at', null)
         .order('name')
 
       if (error) throw error
       return data as Category[]
     },
+    enabled: !!userId,
   })
 
   const createCategory = useMutation({
@@ -43,6 +46,7 @@ export function useCategories() {
         .database.from('categories')
         .update(input)
         .eq('id', id)
+        .eq('user_id', useAuthStore.getState().user?.id)
         .select()
         .single()
 
@@ -72,6 +76,7 @@ export function useCategories() {
           deleted_as: input.deletedAs,
         })
         .in('id', ids)
+        .eq('user_id', useAuthStore.getState().user?.id)
 
       if (categoryDelete.error) throw categoryDelete.error
     },
@@ -87,18 +92,21 @@ export function useCategories() {
 
 export function useTrashCategories() {
   const queryClient = useQueryClient()
+  const userId = useAuthStore((s) => s.user?.id)
 
   const query = useQuery({
-    queryKey: ['trash-categories'],
+    queryKey: ['trash-categories', userId],
     queryFn: async () => {
       const { data, error } = await insforge
         .database.from('categories')
         .select('*')
+        .eq('user_id', userId!)
         .order('deleted_at', { ascending: false })
 
       if (error) throw error
       return (data as Category[]).filter((category) => category.deleted_at)
     },
+    enabled: !!userId,
   })
 
   const restoreCategory = useMutation({
@@ -113,6 +121,7 @@ export function useTrashCategories() {
           deleted_as: null,
         })
         .in('id', ids)
+        .eq('user_id', useAuthStore.getState().user?.id)
 
       if (error) throw error
     },
@@ -122,12 +131,33 @@ export function useTrashCategories() {
     },
   })
 
-  return { ...query, restoreCategory }
+  const permanentDelete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return
+
+      const { error } = await insforge
+        .database.from('categories')
+        .delete()
+        .in('id', ids)
+        .eq('user_id', useAuthStore.getState().user?.id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['trash-categories'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+
+  return { ...query, restoreCategory, permanentDelete }
 }
 
 export function buildCategoryTree(categories: Category[]): Category[] {
-  const map = new Map<string, Category & { children: (Category & { children: any[] })[] }>()
-  const roots: (Category & { children: any[] })[] = []
+  type CategoryWithChildren = Category & { children: CategoryWithChildren[] }
+
+  const map = new Map<string, CategoryWithChildren>()
+  const roots: CategoryWithChildren[] = []
 
   for (const cat of categories) {
     map.set(cat.id, { ...cat, children: [] })

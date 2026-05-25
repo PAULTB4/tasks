@@ -13,3 +13,7 @@ coverage/
 opencode.json
 .mcp.json
 .claude/
+.atl/
+AGENTS.md
+openspec/
+

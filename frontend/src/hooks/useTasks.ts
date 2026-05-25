@@ -3,6 +3,9 @@ import { useEffect, useMemo } from 'react'
 import { insforge } from '../lib/insforge'
 import { useAuthStore } from './useAuthStore'
 import type { Task, Priority } from '../types'
+import type { CreateTaskFormData } from '../components/tasks/CreateTaskDialog'
+
+type TaskCountRow = Pick<Task, 'category_id' | 'status_id'>
 
 interface CreateTaskInput {
   title: string
@@ -25,16 +28,17 @@ interface UpdateTaskInput {
 export function useTasks(categoryId?: string) {
   const queryClient = useQueryClient()
   const userId = useAuthStore((s) => s.user?.id)
-  const queryKey = useMemo(() => ['tasks', categoryId] as const, [categoryId])
+  const queryKey = useMemo(() => ['tasks', categoryId, userId] as const, [categoryId, userId])
 
   useEffect(() => {
     if (!categoryId || !userId) return
 
-    const channel = `tasks:${categoryId}`
+    const channel = `tasks:${userId}:${categoryId}`
 
     const handleTaskCreated = (payload: { task?: Task }) => {
       if (!payload.task || payload.task.category_id !== categoryId) return
 
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) => {
         if (current.some((task) => task.id === payload.task!.id)) return current
         return [payload.task!, ...current]
@@ -43,6 +47,7 @@ export function useTasks(categoryId?: string) {
 
     const handleTaskUpdated = (payload: { task?: Task }) => {
       if (!payload.task || payload.task.category_id !== categoryId) return
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.map((task) => task.id === payload.task!.id ? payload.task! : task),
       )
@@ -50,6 +55,7 @@ export function useTasks(categoryId?: string) {
 
     const handleTaskDeleted = (payload: { taskId?: string }) => {
       if (!payload.taskId) return
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.filter((task) => task.id !== payload.taskId),
       )
@@ -75,10 +81,10 @@ export function useTasks(categoryId?: string) {
   }, [categoryId, queryClient, queryKey, userId])
 
   const publishTaskEvent = async (event: string, payload: Record<string, unknown>) => {
-    if (!categoryId) return
+    if (!categoryId || !userId) return
 
     try {
-      await insforge.realtime.publish(`tasks:${categoryId}`, event, payload)
+      await insforge.realtime.publish(`tasks:${userId}:${categoryId}`, event, payload)
     } catch {
       // Realtime must not block the persisted DB mutation flow.
     }
@@ -90,6 +96,7 @@ export function useTasks(categoryId?: string) {
       let q = insforge
         .database.from('tasks')
         .select('*')
+        .eq('user_id', userId!)
         .order('created_at', { ascending: false })
 
       if (categoryId) {
@@ -100,7 +107,7 @@ export function useTasks(categoryId?: string) {
       if (error) throw error
       return data as Task[]
     },
-    enabled: !!categoryId,
+    enabled: !!categoryId && !!userId,
   })
 
   const createTask = useMutation({
@@ -116,6 +123,7 @@ export function useTasks(categoryId?: string) {
       return data as Task
     },
     onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) => {
         if (current.some((item) => item.id === task.id)) return current
         return [task, ...current]
@@ -130,6 +138,7 @@ export function useTasks(categoryId?: string) {
         .database.from('tasks')
         .update(input)
         .eq('id', id)
+        .eq('user_id', useAuthStore.getState().user?.id)
         .select()
         .single()
 
@@ -153,6 +162,7 @@ export function useTasks(categoryId?: string) {
       }
     },
     onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       queryClient.setQueryData<Task[]>(queryKey, (current = []) =>
         current.map((item) => item.id === task.id ? task : item),
       )
@@ -166,6 +176,7 @@ export function useTasks(categoryId?: string) {
         .database.from('tasks')
         .delete()
         .eq('id', id)
+        .eq('user_id', useAuthStore.getState().user?.id)
 
       if (error) throw error
     },
@@ -185,9 +196,54 @@ export function useTasks(categoryId?: string) {
       }
     },
     onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['pending-task-counts'] })
       publishTaskEvent('task_deleted', { taskId: id })
     },
   })
 
   return { ...query, createTask, updateTask, deleteTask }
+}
+
+export function toCreateTaskInput(categoryId: string, data: CreateTaskFormData): CreateTaskInput {
+  return {
+    title: data.title,
+    description: data.description,
+    priority: data.priority,
+    status_id: data.status_id,
+    due_date: data.due_date,
+    category_id: categoryId,
+  }
+}
+
+export function usePendingTaskCounts() {
+  const userId = useAuthStore((s) => s.user?.id)
+
+  return useQuery({
+    queryKey: ['pending-task-counts', userId],
+    queryFn: async () => {
+      const [tasksResult, statusesResult] = await Promise.all([
+        insforge.database.from('tasks').select('category_id,status_id').eq('user_id', userId!),
+        insforge.database.from('task_statuses').select('id,name').eq('user_id', userId!),
+      ])
+
+      if (tasksResult.error) throw tasksResult.error
+      if (statusesResult.error) throw statusesResult.error
+
+      const completedStatusIds = new Set(
+        (statusesResult.data ?? [])
+          .filter((status) => status.name?.trim().toLocaleLowerCase() === 'completado')
+          .map((status) => status.id),
+      )
+
+      return ((tasksResult.data ?? []) as TaskCountRow[]).reduce<Record<string, number>>(
+        (counts, task) => {
+          if (completedStatusIds.has(task.status_id)) return counts
+          counts[task.category_id] = (counts[task.category_id] ?? 0) + 1
+          return counts
+        },
+        {},
+      )
+    },
+    enabled: !!userId,
+  })
 }

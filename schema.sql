@@ -89,3 +89,100 @@ CREATE TRIGGER update_tasks_updated_at
 CREATE TRIGGER update_task_notes_updated_at
   BEFORE UPDATE ON task_notes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- User isolation for PostgREST/InsForge requests
+CREATE OR REPLACE FUNCTION current_app_user_id()
+RETURNS TEXT
+LANGUAGE SQL
+STABLE
+AS $$
+  SELECT COALESCE(
+    NULLIF(current_setting('request.jwt.claim.sub', true), ''),
+    NULLIF(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub', ''),
+    NULLIF(NULLIF(current_setting('request.jwt.claims', true), '')::jsonb ->> 'user_id', '')
+  )
+$$;
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_statuses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_notes ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY categories_user_isolation ON categories
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY task_statuses_user_isolation ON task_statuses
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY tasks_user_isolation ON tasks
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+CREATE POLICY task_notes_user_isolation ON task_notes
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+-- User feedback/suggestions
+CREATE TABLE feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'feedback' CHECK (type IN ('feedback', 'suggestion', 'bug')),
+  message TEXT NOT NULL,
+  read_at TIMESTAMPTZ,
+  read_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX idx_feedback_created_at ON feedback(created_at);
+
+ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY feedback_user_isolation ON feedback
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+-- Admin users (manually assigned)
+CREATE TABLE admin_users (
+  user_id TEXT PRIMARY KEY,
+  role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'superadmin')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY admin_users_isolation ON admin_users
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());
+
+-- User profiles for tracking and metrics
+CREATE TABLE user_profiles (
+  user_id TEXT PRIMARY KEY,
+  last_login TIMESTAMPTZ,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TRIGGER update_user_profiles_updated_at
+  BEFORE UPDATE ON user_profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE INDEX idx_user_profiles_last_login ON user_profiles(last_login);
+CREATE INDEX idx_user_profiles_is_active ON user_profiles(is_active);
+
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY user_profiles_own ON user_profiles
+  FOR ALL
+  USING (user_id = current_app_user_id())
+  WITH CHECK (user_id = current_app_user_id());

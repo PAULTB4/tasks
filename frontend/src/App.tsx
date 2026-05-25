@@ -3,6 +3,11 @@ import { Routes, Route } from 'react-router-dom'
 import { useAuthStore } from './hooks/useAuthStore'
 import { useThemeStore } from './hooks/useThemeStore'
 import { ProtectedRoute } from './components/layout/ProtectedRoute'
+import { ProtectedAdminRoute } from './components/layout/ProtectedAdminRoute'
+import { AdminLayout } from './components/admin/AdminLayout'
+import { AdminOverview } from './components/admin/AdminOverview'
+import { AdminFeedbacks } from './components/admin/AdminFeedbacks'
+import { AdminUsers } from './components/admin/AdminUsers'
 import { LandingPage } from './pages/LandingPage'
 import { AuthPage } from './pages/AuthPage'
 import { DashboardLayout } from './pages/DashboardLayout'
@@ -28,7 +33,7 @@ function App() {
 
   useEffect(() => {
     initTheme()
-  }, [])
+  }, [initTheme])
 
   useEffect(() => {
     if (!initialized) {
@@ -50,6 +55,18 @@ function App() {
       >
         <Route index element={<EmptyDashboard />} />
         <Route path="category/:categoryId" element={<CategoryView />} />
+      </Route>
+      <Route
+        path="/admin"
+        element={
+          <ProtectedAdminRoute>
+            <AdminLayout />
+          </ProtectedAdminRoute>
+        }
+      >
+        <Route index element={<AdminOverview />} />
+        <Route path="feedbacks" element={<AdminFeedbacks />} />
+        <Route path="users" element={<AdminUsers />} />
       </Route>
     </Routes>
   )
