@@ -21,10 +21,13 @@ export function useAdmin() {
     staleTime: 1000 * 60 * 60 * 24, // 24 hours
   })
 
+  // While auth is loading OR admin query is pending (and user exists), treat as loading
+  const isChecking = !user?.id || isLoading
+
   return { 
     isAdmin: !!adminUser, 
     role: adminUser?.role ?? null, 
-    isLoading, 
+    isLoading: isChecking, 
     user 
   }
 }
