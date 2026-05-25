@@ -47,7 +47,7 @@ export const prioritySelectOptions = [
   { value: 'urgent', label: 'Urgente' },
 ] as const satisfies Array<{ value: Priority; label: string }>
 
-export function getDueDateInfo(dueDate: string): { label: string; color: string; darkColor: string } {
+export function getDueDateInfo(dueDate: string): { label: string; color: string; darkColor: string; isOverdue: boolean } {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
   const due = new Date(dueDate)
@@ -61,10 +61,10 @@ export function getDueDateInfo(dueDate: string): { label: string; color: string;
   const monthLabel = months[due.getMonth()]
   const staticLabel = `${day} ${monthLabel}`
 
-  if (diffDays < 0) return { label: 'Vencido', color: 'text-red-600', darkColor: 'dark:text-red-400' }
-  if (diffDays === 0) return { label: 'Hoy', color: 'text-red-600', darkColor: 'dark:text-red-400' }
-  if (diffDays === 1) return { label: 'Mañana', color: 'text-orange-600', darkColor: 'dark:text-orange-400' }
-  if (diffDays <= 3) return { label: staticLabel, color: 'text-amber-600', darkColor: 'dark:text-amber-400' }
-  if (diffDays <= 7) return { label: staticLabel, color: 'text-blue-600', darkColor: 'dark:text-blue-400' }
-  return { label: staticLabel, color: 'text-surface-500', darkColor: 'dark:text-surface-400' }
+  if (diffDays < 0) return { label: 'Vencido', color: 'text-red-600', darkColor: 'dark:text-red-400', isOverdue: true }
+  if (diffDays === 0) return { label: 'Hoy', color: 'text-red-600', darkColor: 'dark:text-red-400', isOverdue: true }
+  if (diffDays === 1) return { label: 'Mañana', color: 'text-orange-600', darkColor: 'dark:text-orange-400', isOverdue: false }
+  if (diffDays <= 3) return { label: staticLabel, color: 'text-amber-600', darkColor: 'dark:text-amber-400', isOverdue: false }
+  if (diffDays <= 7) return { label: staticLabel, color: 'text-blue-600', darkColor: 'dark:text-blue-400', isOverdue: false }
+  return { label: staticLabel, color: 'text-surface-500', darkColor: 'dark:text-surface-400', isOverdue: false }
 }
