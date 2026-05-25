@@ -52,13 +52,15 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
           onChange={(e) => setType(e.target.value as typeof type)}
           options={TYPE_OPTIONS}
         />
-        <Textarea
-          label="Tu mensaje"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Cuéntanos lo que piensas..."
-          rows={4}
-        />
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">Tu mensaje</label>
+          <Textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Cuéntanos lo que piensas..."
+            rows={4}
+          />
+        </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Tal vez después
