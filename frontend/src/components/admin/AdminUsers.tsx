@@ -13,7 +13,7 @@ interface UserProfile {
 }
 
 export function AdminUsers() {
-  const { data: users, isLoading, refetch } = useQuery({
+  const { data: users, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       const { data, error } = await insforge
@@ -25,6 +25,10 @@ export function AdminUsers() {
     },
   })
 
+  const handleRefresh = () => {
+    refetch()
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -32,13 +36,13 @@ export function AdminUsers() {
           <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-50">Usuarios</h1>
           <p className="text-sm text-surface-500 mt-1">Gestión de usuarios registrados</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw size={16} className="mr-2" />
-          Actualizar
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching}>
+          <RefreshCw size={16} className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          {isFetching ? 'Actualizando...' : 'Actualizar'}
         </Button>
       </div>
 
-      <div className="rounded-2xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900 overflow-hidden">
+      <div className={`rounded-2xl border border-surface-200 bg-white dark:border-surface-800 dark:bg-surface-900 overflow-hidden transition-opacity duration-200 ${isFetching ? 'opacity-50' : ''}`}>
         <table className="w-full">
           <thead className="bg-surface-50 dark:bg-surface-900">
             <tr>
