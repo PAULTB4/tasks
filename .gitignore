@@ -13,3 +13,5 @@ coverage/
 opencode.json
 .mcp.json
 .claude/
+.atl/
+

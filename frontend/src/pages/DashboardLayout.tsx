@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Outlet, useNavigate, useParams } from 'react-router-dom'
 import { Sidebar } from '../components/layout/Sidebar'
+import { FeedbackButton } from '../components/feedback/FeedbackButton'
 import { Menu } from 'lucide-react'
 
 export function DashboardLayout() {
@@ -30,6 +31,7 @@ export function DashboardLayout() {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
+        <FeedbackButton />
         <main className="flex-1 flex flex-col overflow-hidden">
           <Outlet />
         </main>

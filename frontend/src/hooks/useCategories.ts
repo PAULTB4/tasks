@@ -131,7 +131,26 @@ export function useTrashCategories() {
     },
   })
 
-  return { ...query, restoreCategory }
+  const permanentDelete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return
+
+      const { error } = await insforge
+        .database.from('categories')
+        .delete()
+        .in('id', ids)
+        .eq('user_id', useAuthStore.getState().user?.id)
+
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['trash-categories'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+
+  return { ...query, restoreCategory, permanentDelete }
 }
 
 export function buildCategoryTree(categories: Category[]): Category[] {
